@@ -1,4 +1,4 @@
-const module = require('../models/model');
+const Model = require('../models/model');
 
 const controllers = {
     getHome: (req, res) => {

@@ -1,0 +1,28 @@
+{
+  "name": "project_web_and_cloud",
+  "version": "1.0.0",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/66070010Ninja/Project_Web_and_Cloud.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/66070010Ninja/Project_Web_and_Cloud/issues"
+  },
+  "homepage": "https://github.com/66070010Ninja/Project_Web_and_Cloud#readme",
+  "description": "",
+  "dependencies": {
+    "dotenv": "^17.2.2",
+    "express": "^5.1.0",
+    "mysql2": "^3.14.5",
+    "uuid": "^13.0.0"
+  }
+}
+
