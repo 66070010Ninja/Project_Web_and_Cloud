@@ -1,10 +1,10 @@
 // index.js
-const router = require('./router/page_router');
-const express = require('express');
+const router = require('./routes/page_router');
 
+const express = require('express');
 const app = express();
 app.use(express.json());
-app.use('/api', router);
+app.use('/page', router);
 
 const port = 3000;
 
