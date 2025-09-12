@@ -19,20 +19,5 @@ router.get('/login', controllers.getLogin);
 // Browse route
 router.get('/browse', controllers.getBrowse);
 
-// Game upload route
-router.get('/game/upload', controllers.getGameUpload);
-router.post('/game/upload', controllers.postGameUpload);
-
-// Game edit route
-router.get('/game/edit', controllers.getGameEdit);
-router.post('/game/edit', controllers.postGameEdit);
-
-// Profile route
-router.get('/profile/view', controllers.getProfile);
-
-// Profile edit route
-router.get('/profile/edit', controllers.getProfileEdit);
-router.post('/profile/edit', controllers.postProfileEdit);
-
 // Export the router
 module.exports = router;
