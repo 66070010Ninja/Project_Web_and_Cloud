@@ -1,24 +1,20 @@
 // config/db.js
-require('dotenv').config();
+
+// Load environment variables from .env file
 const mysql = require('mysql2');
+const dotenv = require('dotenv');
 
-// MySQL database connection configuration
+// Configure dotenv to load variables from .env file
+dotenv.config();
+
+// Create a connection db to the MySQL database
 const db = mysql.createConnection({
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-  port: process.env.DB_PORT
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+    port: process.env.DB_PORT
 });
 
-// Connect to the database
-db.connect((err) => {
-  if (err) {
-    console.error('Error connecting to the database:', err);
-    return;
-  }
-  console.log('Connected to the MySQL database.');
-});
-
-// Export the database connection
-module.exports = db;
+// Export the db for use in other modules
+module.exports = db.promise();
