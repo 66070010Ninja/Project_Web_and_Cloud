@@ -5,25 +5,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login</title>
+    <title>Login</title> <!-- ชื่อหน้าเว็บ -->
 </head>
 
 <body>
-    <h2>Login</h2>
+    <h2>Login</h2> <!-- หัวข้อหน้า Login -->
+
+    <!-- ฟอร์มสำหรับส่งข้อมูล login ไปยัง route /user/login ด้วย method POST -->
     <form action="/user/login" method="post">
+        <!-- ช่องกรอกชื่อผู้ใช้ -->
         <label for="username">Username: </label>
         <input type="text" id="username" name="username" required>
         <br>
+
+        <!-- ช่องกรอกรหัสผ่าน -->
         <label for="password">Password: </label>
         <input type="password" id="password" name="password" required>
         <br>
+
+        <!-- ปุ่มส่งฟอร์ม -->
         <button type="submit">Login</button>
     </form>
+
+    <!-- แสดงข้อความ error หากมี -->
     <% if (error) { %>
         <p style="color:red;">
-            <%= error %>
+            <%= error %> <!-- แสดงข้อความ error ที่ส่งมาจาก controller -->
         </p>
-        <% } %>
+    <% } %>
 </body>
 
 </html>

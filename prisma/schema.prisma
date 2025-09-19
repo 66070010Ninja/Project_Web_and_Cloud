@@ -1,18 +1,22 @@
+// schema.prisma
 
+// กำหนด generator สำหรับสร้าง Prisma Client
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client-js" // ใช้ JavaScript/TypeScript client
 }
 
+// กำหนด datasource สำหรับเชื่อมต่อฐานข้อมูล
 datasource db {
-  provider = "mysql"
-  url      = env("DATABASE_URL")
+  provider = "mysql" // ใช้ MySQL เป็นฐานข้อมูล
+  url      = env("DATABASE_URL") // ดึง URL การเชื่อมต่อจากตัวแปรสภาพแวดล้อม
 }
 
+// กำหนด model ชื่อ account สำหรับตารางผู้ใช้
 model account {
-  User_id         Int    @id @default(autoincrement())
-  User_Name       String @unique @db.VarChar(255)
-  Email           String @db.VarChar(255)
-  Hashed_Password String @db.VarChar(255)
-  Roles           String @default("Member") @db.VarChar(255)
-  Profile_Image   String @default("Profile.png") @db.VarChar(255)
+  User_id         Int    @id @default(autoincrement())            // รหัสผู้ใช้, primary key, auto-increment
+  User_Name       String @unique @db.VarChar(255)                 // ชื่อผู้ใช้, ต้องไม่ซ้ำ, varchar 255
+  Email           String @db.VarChar(255)                         // อีเมล, varchar 255
+  Hashed_Password String @db.VarChar(255)                         // รหัสผ่านที่เข้ารหัส, varchar 255
+  Roles           String @default("Member") @db.VarChar(255)      // บทบาทผู้ใช้, default = "Member"
+  Profile_Image   String @default("Profile.png") @db.VarChar(255) // รูปโปรไฟล์, default = "Profile.png"
 }

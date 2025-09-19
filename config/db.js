@@ -1,20 +1,22 @@
 // config/db.js
 
-// Load environment variables from .env file
+// นำเข้าโมดูล mysql2 สำหรับเชื่อมต่อ MySQL
 const mysql = require('mysql2');
+
+// นำเข้า dotenv สำหรับโหลดตัวแปรสภาพแวดล้อมจากไฟล์ .env
 const dotenv = require('dotenv');
 
-// Configure dotenv to load variables from .env file
+// กำหนดให้ dotenv โหลดตัวแปรจากไฟล์ .env
 dotenv.config();
 
-// Create a connection db to the MySQL database
+// สร้างการเชื่อมต่อกับฐานข้อมูล MySQL
 const db = mysql.createConnection({
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
-    port: process.env.DB_PORT
+    host: process.env.DB_HOST,      // ชื่อ host ของฐานข้อมูล เช่น localhost
+    user: process.env.DB_USER,      // ชื่อผู้ใช้งาน MySQL
+    password: process.env.DB_PASSWORD,  // รหัสผ่านของผู้ใช้งาน
+    database: process.env.DB_NAME,  // ชื่อฐานข้อมูลที่จะใช้
+    port: process.env.DB_PORT       // พอร์ตของ MySQL (ค่า default คือ 3306)
 });
 
-// Export the db for use in other modules
+// ส่งออกการเชื่อมต่อแบบ promise เพื่อให้สามารถใช้ async/await ในโมดูลอื่นๆ ได้
 module.exports = db.promise();

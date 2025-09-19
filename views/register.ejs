@@ -5,31 +5,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register</title>
+    <title>Register</title> <!-- ชื่อหน้าเว็บ -->
 </head>
 
 <body>
-    <h2>Register</h2>
+    <h2>Register</h2> <!-- หัวข้อหน้า Register -->
+
+    <!-- ฟอร์มสำหรับส่งข้อมูล register ไปยัง route /user/register ด้วย method POST -->
     <form action="/user/register" method="post">
+        <!-- ช่องกรอกชื่อผู้ใช้ -->
         <label for="username">Username: </label>
         <input type="text" id="username" name="username" required>
         <br>
+
+        <!-- ช่องกรอกอีเมล -->
         <label for="email">Email: </label>
         <input type="email" id="email" name="email" required>
         <br>
+
+        <!-- ช่องกรอกรหัสผ่าน -->
         <label for="password">Password: </label>
         <input type="password" id="password" name="password" required>
         <br>
+
+        <!-- ช่องกรอกยืนยันรหัสผ่าน -->
         <label for="confirm_password">Confirm password: </label>
         <input type="password" id="confirm_password" name="confirm_password" required>
         <br>
+
+        <!-- ปุ่มส่งฟอร์ม -->
         <button type="submit">Register</button>
     </form>
+
+    <!-- แสดงข้อความ error หากมี -->
     <% if (error) { %>
         <p style="color:red;">
-            <%= error %>
+            <%= error %> <!-- แสดงข้อความ error ที่ส่งมาจาก controller -->
         </p>
-        <% } %>
+    <% } %>
 </body>
 
 </html>
