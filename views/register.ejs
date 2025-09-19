@@ -1,4 +1,6 @@
-<!-- views/register.ejs -->
+<!-- ==========================
+     views/register.ejs
+     ========================== -->
 <!DOCTYPE html>
 <html lang="en">
 
@@ -11,7 +13,9 @@
 <body>
     <h2>Register</h2> <!-- หัวข้อหน้า Register -->
 
-    <!-- ฟอร์มสำหรับส่งข้อมูล register ไปยัง route /user/register ด้วย method POST -->
+    <!-- ==========================
+         ฟอร์มสำหรับส่งข้อมูล register
+         ========================== -->
     <form action="/user/register" method="post">
         <!-- ช่องกรอกชื่อผู้ใช้ -->
         <label for="username">Username: </label>
@@ -37,7 +41,9 @@
         <button type="submit">Register</button>
     </form>
 
-    <!-- แสดงข้อความ error หากมี -->
+    <!-- ==========================
+         แสดงข้อความ error หากมี
+         ========================== -->
     <% if (error) { %>
         <p style="color:red;">
             <%= error %> <!-- แสดงข้อความ error ที่ส่งมาจาก controller -->

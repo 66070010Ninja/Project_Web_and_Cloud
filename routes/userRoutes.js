@@ -1,24 +1,35 @@
+// ==========================
 // routes/userRoutes.js
+// ==========================
 
-// นำเข้าโมดูล express
+// นำเข้า Express
 const express = require('express');
-// สร้าง router สำหรับจัดการ route ของผู้ใช้
 const router = express.Router();
 
-// นำเข้า controller ที่จัดการ logic ของผู้ใช้
+// นำเข้า controller สำหรับจัดการผู้ใช้
 const userController = require('../controllers/userControllers');
 
-// Route สำหรับแสดงหน้า register
+// ==========================
+// Routes สำหรับ Register
+// ==========================
+
+// แสดงหน้า register
 router.get('/register', userController.getRegisterPage);
 
-// Route สำหรับส่งข้อมูลฟอร์ม register
+// ประมวลผลการส่งฟอร์ม register
 router.post('/register', userController.postRegister);
 
-// Route สำหรับแสดงหน้า login
+// ==========================
+// Routes สำหรับ Login
+// ==========================
+
+// แสดงหน้า login
 router.get('/login', userController.getLoginPage);
 
-// Route สำหรับส่งข้อมูลฟอร์ม login
+// ประมวลผลการส่งฟอร์ม login
 router.post('/login', userController.postLogin);
 
-// ส่งออก router เพื่อใช้ใน app.js หรือ server.js
+// ==========================
+// ส่งออก router
+// ==========================
 module.exports = router;

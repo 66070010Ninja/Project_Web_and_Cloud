@@ -1,0 +1,86 @@
+<!-- ==========================
+     views/create.ejs
+     ========================== -->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Select2 CSS สำหรับ multi-select -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    
+    <title>Create Game</title>
+</head>
+
+<body>
+    <h2>Create Game</h2>
+
+    <!-- ==========================
+         Form สำหรับสร้างเกมใหม่
+         ========================== -->
+    <form action="/game/create" method="post">
+
+        <!-- ชื่อเกม -->
+        <label for="title_game">Title Game: </label>
+        <input type="text" name="title_game" id="title_game" required>
+        <br>
+
+        <!-- คำอธิบายสั้น -->
+        <label for="description">Short Description: </label>
+        <input type="text" name="description" id="description" required>
+        <br>
+
+        <!-- สถานะการเปิดตัว -->
+        <label for="status_game">Release Status: </label>
+        <select name="status_game" id="status_game" required>
+            <option value="Alpha">Alpha</option>
+            <option value="Beta">Beta</option>
+            <option value="Released">Released</option>
+        </select>
+        <br>
+
+        <!-- รายละเอียดเพิ่มเติม -->
+        <label for="details">Details: </label>
+        <input type="text" name="details" id="details" required>
+        <br>
+
+        <!-- เลือก Tags ของเกม (multi-select) -->
+        <label for="tags">Tags:</label>
+        <select id="tags" name="tags[]" multiple="multiple">
+            <option value="Action">Action</option>
+            <option value="Adventure">Adventure</option>
+            <option value="Card_Game">Card Game</option>
+            <option value="Educational">Educational</option>
+            <option value="Fighting">Fighting</option>
+            <option value="Interactive_Fiction">Interactive Fiction</option>
+            <option value="Puzzle">Puzzle</option>
+            <option value="Racing">Racing</option>
+            <option value="Other">Other</option>
+        </select>
+        <br>
+
+        <!-- ปุ่มส่งฟอร์ม -->
+        <button type="submit">Create</button>
+    </form>
+
+    <!-- ==========================
+         Script สำหรับ jQuery และ Select2
+         ========================== -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+    <script>
+        $(document).ready(function () {
+            // ใช้งาน Select2 สำหรับ multi-select tags
+            $('#tags').select2({
+                placeholder: "เลือก Tags",  // ข้อความ placeholder
+                allowClear: true,            // สามารถลบค่าที่เลือกได้
+                tags: true                   // เพิ่ม tag ใหม่ได้เอง
+            });
+        });
+    </script>
+</body>
+
+</html>

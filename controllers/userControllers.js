@@ -1,23 +1,35 @@
 // controllers/userControllers.js
 
+// ==========================
 // นำเข้าโมดูลที่จำเป็น
+// ==========================
 const userModels = require('../models/userModels'); // โมเดลสำหรับจัดการข้อมูลผู้ใช้
 const bcrypt = require('bcrypt'); // สำหรับเข้ารหัสและตรวจสอบรหัสผ่าน
 
+// ==========================
 // Controller object รวมฟังก์ชันสำหรับจัดการผู้ใช้
+// ==========================
 const userController = {
 
-    // แสดงหน้า login
+    // ==========================
+    // แสดงหน้า Login
+    // ==========================
     getLoginPage: (req, res) => {
-        res.render('login', { error: null }); // render หน้า login และส่งค่า error เป็น null
+        // render หน้า login และส่งค่า error เป็น null (เริ่มต้น)
+        res.render('login', { error: null });
     },
 
-    // แสดงหน้า register
+    // ==========================
+    // แสดงหน้า Register
+    // ==========================
     getRegisterPage: (req, res) => {
-        res.render('register', { error: null }); // render หน้า register และส่งค่า error เป็น null
+        // render หน้า register และส่งค่า error เป็น null (เริ่มต้น)
+        res.render('register', { error: null });
     },
 
-    // ฟังก์ชัน login
+    // ==========================
+    // ฟังก์ชัน Login
+    // ==========================
     postLogin: async (req, res) => {
         try {
             const { username, password } = req.body; // รับค่าจากฟอร์ม login
@@ -32,10 +44,18 @@ const userController = {
             // ตรวจสอบรหัสผ่านว่าตรงกับ hashed password หรือไม่
             const isMatch = await bcrypt.compare(password, user.Hashed_Password);
             if (!isMatch) {
-                return res.render('login', { error: 'Invalid username or password' })
+                return res.render('login', { error: 'Invalid username or password' });
             }
 
-            // login สำเร็จ
+            // เก็บข้อมูลผู้ใช้ไว้ใน session หลัง login สำเร็จ
+            req.session.user = {
+                id: user.User_id,
+                username: user.User_Name,
+                email: user.Email,
+                role: user.Roles
+            };
+
+            // ส่งข้อความยืนยัน login สำเร็จ
             res.send(`Welcome ${user.User_Name}, login success!`);
         }
         catch (error) {
@@ -44,7 +64,9 @@ const userController = {
         }
     },
 
-    // ฟังก์ชัน register
+    // ==========================
+    // ฟังก์ชัน Register
+    // ==========================
     postRegister: async (req, res) => {
         try {
             const { username, email, password, confirm_password } = req.body; // รับค่าจากฟอร์ม register
@@ -60,7 +82,7 @@ const userController = {
                 return res.render('register', { error: 'Username already exists !!!' });
             }
 
-            // เข้ารหัสรหัสผ่าน
+            // เข้ารหัสรหัสผ่าน (bcrypt)
             const hashedpassword = await bcrypt.hash(password, 10);
 
             // สร้างผู้ใช้ใหม่ในฐานข้อมูล
@@ -68,7 +90,7 @@ const userController = {
                 username,
                 email,
                 password: hashedpassword
-            })
+            });
 
             // หลังลงทะเบียนสำเร็จ redirect ไปหน้า login
             res.redirect('/user/login');
@@ -80,5 +102,7 @@ const userController = {
     },
 };
 
+// ==========================
 // ส่งออก controller เพื่อใช้ใน route
+// ==========================
 module.exports = userController;

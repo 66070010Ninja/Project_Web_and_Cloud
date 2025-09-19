@@ -1,22 +1,93 @@
+// ==========================
 // schema.prisma
+// ==========================
 
-// กำหนด generator สำหรับสร้าง Prisma Client
+// ==========================
+// Generator สำหรับ Prisma Client
+// ==========================
 generator client {
-  provider = "prisma-client-js" // ใช้ JavaScript/TypeScript client
+  provider = "prisma-client-js"
 }
 
-// กำหนด datasource สำหรับเชื่อมต่อฐานข้อมูล
+// ==========================
+// Datasource สำหรับเชื่อมต่อ MySQL
+// ==========================
 datasource db {
-  provider = "mysql" // ใช้ MySQL เป็นฐานข้อมูล
-  url      = env("DATABASE_URL") // ดึง URL การเชื่อมต่อจากตัวแปรสภาพแวดล้อม
+  provider = "mysql"
+  url      = env("DATABASE_URL") // URL จากไฟล์ .env
 }
 
-// กำหนด model ชื่อ account สำหรับตารางผู้ใช้
+// ==========================
+// ตาราง account สำหรับผู้ใช้
+// ==========================
 model account {
-  User_id         Int    @id @default(autoincrement())            // รหัสผู้ใช้, primary key, auto-increment
-  User_Name       String @unique @db.VarChar(255)                 // ชื่อผู้ใช้, ต้องไม่ซ้ำ, varchar 255
-  Email           String @db.VarChar(255)                         // อีเมล, varchar 255
-  Hashed_Password String @db.VarChar(255)                         // รหัสผ่านที่เข้ารหัส, varchar 255
-  Roles           String @default("Member") @db.VarChar(255)      // บทบาทผู้ใช้, default = "Member"
-  Profile_Image   String @default("Profile.png") @db.VarChar(255) // รูปโปรไฟล์, default = "Profile.png"
+  User_id         Int      @id @default(autoincrement())              // Primary key
+  User_Name       String   @unique(map: "User_Name") @db.VarChar(255) // ชื่อผู้ใช้ ต้องไม่ซ้ำ
+  Email           String   @db.VarChar(255)                           // อีเมล
+  Hashed_Password String   @db.VarChar(255)                           // รหัสผ่านเข้ารหัส
+  Roles           String   @default("Member") @db.VarChar(255)        // สิทธิ์ผู้ใช้
+  Profile_Image   String   @default("Profile.png") @db.VarChar(255)   // รูปโปรไฟล์
+  games           games[]                                             // ความสัมพันธ์ 1-to-many กับตาราง games
+  review          review[]                                            // ความสัมพันธ์ 1-to-many กับตาราง review
+}
+
+// ==========================
+// ตาราง games สำหรับเกม
+// ==========================
+model games {
+  Game_id      Int     @id @default(autoincrement())         // Primary key
+  User_id      Int                                           // Foreign key จาก account
+  Game_Title   String  @db.VarChar(255)                      // ชื่อเกม
+  Description  String? @db.VarChar(255)                      // คำอธิบาย
+  Game_Image   String  @db.VarChar(255)                      // รูปภาพเกม
+  File_Game    String  @db.VarChar(255)                      // ไฟล์เกม
+  Status_Game  String? @db.VarChar(255)                      // สถานะเกม
+  Log_Game     String? @db.VarChar(255)                      // Log ของเกม
+  Hidding_Game Int     @default(1)                           // 1=ซ่อน, 0=ไม่ซ่อน
+  Soft_Delete  Int     @default(1)                           // 1=ลบแบบ soft delete, 0=ไม่ลบ
+  View         Int     @default(0)                           // จำนวนวิว
+  Download     Int     @default(0)                           // จำนวนดาวน์โหลด
+  Game_Engin   String? @db.VarChar(255)                      // Engine ของเกม
+  Details      String? @db.VarChar(255)                      // รายละเอียดเพิ่มเติม
+
+  // ความสัมพันธ์
+  account      account @relation(fields: [User_id], references: [User_id], onDelete: NoAction, onUpdate: NoAction, map: "games_ibfk_1")
+  review       review? // ความสัมพันธ์ 1-to-1 กับ review
+  tags         tags?   // ความสัมพันธ์ 1-to-1 กับ tags
+
+  @@index([User_id], map: "User_id")
+}
+
+// ==========================
+// ตาราง review สำหรับคอมเมนต์ของผู้ใช้ต่อเกม
+// ==========================
+model review {
+  Game_id Int     @id @default(autoincrement()) // Primary key
+  User_id Int                                   // Foreign key จาก account
+  Comment String? @db.VarChar(255)              // คอมเมนต์
+
+  // ความสัมพันธ์
+  games   games   @relation(fields: [Game_id], references: [Game_id], onDelete: NoAction, onUpdate: NoAction, map: "review_ibfk_1")
+  account account @relation(fields: [User_id], references: [User_id], onDelete: NoAction, onUpdate: NoAction, map: "review_ibfk_2")
+
+  @@index([User_id], map: "User_id")
+}
+
+// ==========================
+// ตาราง tags สำหรับประเภทของเกม
+// ==========================
+model tags {
+  Game_id             Int   @id @default(autoincrement()) // Primary key
+  Action              Int   @default(0)
+  Adventure           Int   @default(0)
+  Card_Game           Int   @default(0)
+  Educational         Int   @default(0)
+  Fighting            Int   @default(0)
+  Interactive_Fiction Int   @default(0)
+  Puzzle              Int   @default(0)
+  Racing              Int   @default(0)
+  Other               Int   @default(0)
+
+  // ความสัมพันธ์
+  games               games @relation(fields: [Game_id], references: [Game_id], onDelete: NoAction, onUpdate: NoAction, map: "tags_ibfk_1")
 }

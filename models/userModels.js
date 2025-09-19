@@ -1,14 +1,21 @@
-// modelss/userModels.js
+// ==========================
+// models/userModels.js
+// ==========================
 
 // นำเข้า PrismaClient จาก @prisma/client
 const { PrismaClient } = require('@prisma/client');
+
 // สร้าง instance ของ PrismaClient เพื่อใช้เชื่อมต่อฐานข้อมูล
 const prisma = new PrismaClient();
 
+// ==========================
 // โมเดลสำหรับจัดการข้อมูลผู้ใช้
+// ==========================
 const userModels = {
 
+    // ==========================
     // ฟังก์ชันสร้างผู้ใช้ใหม่
+    // ==========================
     create: async (data) => {
         // ใช้ Prisma สร้างแถวใหม่ในตาราง account
         return await prisma.account.create({
@@ -17,10 +24,12 @@ const userModels = {
                 Email: data.email,              // กำหนดอีเมล
                 Hashed_Password: data.password  // กำหนดรหัสผ่านที่เข้ารหัสแล้ว
             }
-        })
+        });
     },
 
+    // ==========================
     // ฟังก์ชันค้นหาผู้ใช้ตาม username
+    // ==========================
     findByUsername: async (username) => {
         // ใช้ Prisma ค้นหาผู้ใช้จากคอลัมน์ User_Name
         return await prisma.account.findUnique({
@@ -31,5 +40,7 @@ const userModels = {
     },
 };
 
+// ==========================
 // ส่งออกโมเดลเพื่อใช้ใน controller หรือที่อื่น ๆ
+// ==========================
 module.exports = userModels;
