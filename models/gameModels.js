@@ -78,6 +78,23 @@ const gameModels = {
         });
     },
 
+    createReview: async (data) => {
+        return await prisma.review.create({
+            data: {
+                Game_id: data.game_id,
+                User_id: data.user_id,
+                Comment: data.comment
+            }
+        })
+    },
+
+    findReviewsByGameId: async (gameId) => {
+        return await prisma.review.findMany({
+            where: { Game_id: gameId },
+            include: { account: true }
+        });
+    },
+
 };
 
 // ==========================

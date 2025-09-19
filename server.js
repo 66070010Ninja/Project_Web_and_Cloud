@@ -3,8 +3,8 @@
 // ==========================
 
 // นำเข้าโมดูลที่จำเป็น
-const express = require('express');        // สำหรับสร้างเว็บเซิร์ฟเวอร์
-const path = require('path');              // สำหรับจัดการ path ของไฟล์และโฟลเดอร์
+const express = require('express');         // สำหรับสร้างเว็บเซิร์ฟเวอร์
+const path = require('path');               // สำหรับจัดการ path ของไฟล์และโฟลเดอร์
 const session = require('express-session'); // สำหรับจัดการ session
 
 // สร้าง instance ของ Express application

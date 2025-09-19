@@ -29,6 +29,10 @@ router.get('/edit/:id', gameController.getEditGamePage);
 // ประมวลผลการอัปเดตเกม โดยระบุ ID ของเกม
 router.post('/edit/:id', gameController.postUpdateGame);
 
+router.post('/review/:id', gameController.postCreateReview);
+
+router.get('/review/:id', gameController.getGameReview)
+
 // ==========================
 // ส่งออก router
 // ==========================

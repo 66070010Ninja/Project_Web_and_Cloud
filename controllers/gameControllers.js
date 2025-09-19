@@ -83,8 +83,6 @@ const gameController = {
                 return res.status(400).send("Invalid game ID");
             }
 
-            console.log("Updating gameId:", gameId);
-
             const { Game_Title, Description, Status_Game, Details, tags } = req.body;
 
             // อัปเดตข้อมูลเกม
@@ -117,6 +115,38 @@ const gameController = {
             res.status(500).send("Internal Server Error");
         }
     },
+
+    postCreateReview: async (req, res) => {
+        try {
+            if (!req.session.user) {
+                return res.status(401).send("Unauthorized: Please log in first.");
+            }
+
+            const gameId = parseInt(req.params.id, 10);
+            const { comment } = req.body;
+
+            await gameModels.createReview({
+                game_id: gameId,
+                user_id: req.session.user.id,
+                comment
+            });
+        }
+        catch (error) {
+            console.error("Error creating review:", error);
+            res.status(500).send("Internal Server Error");
+        }
+    },
+
+    getGameReview: async (req, res) => {
+        try {
+            const gameId = parseInt(req.params.id, 10);
+            const review = await gameModels.findReviewsByGameId(gameId);
+        }
+        catch (error) {
+            console.error("Error fetching reviews:", error);
+            res.status(500).send("Internal Server Error");
+        }
+    }
 
 };
 
