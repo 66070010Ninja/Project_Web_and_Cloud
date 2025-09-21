@@ -7,7 +7,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
     <title>Login</title> <!-- ชื่อหน้าเว็บ -->
 </head>
 
@@ -21,12 +20,19 @@
         
         <!-- ช่องกรอกชื่อผู้ใช้ -->
         <label for="username">Username: </label>
-        <input type="text" id="username" name="username" required>
+        <input type="text" 
+               id="username" 
+               name="username" 
+               value="<%= formData ? formData.username : '' %>" 
+               required>
         <br>
 
         <!-- ช่องกรอกรหัสผ่าน -->
         <label for="password">Password: </label>
-        <input type="password" id="password" name="password" required>
+        <input type="password" 
+               id="password" 
+               name="password" 
+               required>
         <br>
 
         <!-- ปุ่มส่งฟอร์ม -->

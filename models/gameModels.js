@@ -78,20 +78,27 @@ const gameModels = {
         });
     },
 
+    // ==========================
+    // สร้าง Review ใหม่
+    // ==========================
     createReview: async (data) => {
         return await prisma.review.create({
             data: {
-                Game_id: data.game_id,
-                User_id: data.user_id,
-                Comment: data.comment
+                Game_id: data.game_id,  // ID เกมที่รีวิว
+                User_id: data.user_id,  // ID ผู้ใช้ที่รีวิว
+                Comment: data.comment   // ข้อความรีวิว
             }
-        })
+        });
     },
 
+    // ==========================
+    // ดึง Review ทั้งหมดของเกม
+    // ==========================
     findReviewsByGameId: async (gameId) => {
         return await prisma.review.findMany({
             where: { Game_id: gameId },
-            include: { account: true }
+            include: { account: true },         // ดึงข้อมูลผู้ใช้ด้วย
+            orderBy: { Created_At: 'desc' }     // เรียงจากล่าสุดไปเก่าสุด
         });
     },
 

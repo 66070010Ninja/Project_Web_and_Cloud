@@ -12,41 +12,58 @@ const bcrypt = require('bcrypt'); // สำหรับเข้ารหัส�
 const userController = {
 
     // ==========================
-    // แสดงหน้า Login
+    // ======== PAGE VIEWS =======
     // ==========================
+
+    /**
+     * แสดงหน้า Login
+     */
     getLoginPage: (req, res) => {
-        res.render('login', { error: null });
+        res.render('login', { error: null, formData: {} });
     },
 
-    // ==========================
-    // แสดงหน้า Register
-    // ==========================
+    /**
+     * แสดงหน้า Register
+     */
     getRegisterPage: (req, res) => {
-        res.render('register', { error: null });
+        res.render('register', { error: null, formData: {} });
     },
 
     // ==========================
-    // ฟังก์ชัน Login
+    // ======== AUTH ACTIONS =====
     // ==========================
+
+    /**
+     * ฟังก์ชัน Login
+     */
     postLogin: async (req, res) => {
         try {
             const { username, password } = req.body;
 
             // ตรวจสอบว่ากรอกครบหรือไม่
             if (!username || !password) {
-                return res.render('login', { error: 'Please fill in all fields' });
+                return res.render('login', { 
+                    error: 'Please fill in all fields', 
+                    formData: { username } 
+                });
             }
 
-            // ค้นหาผู้ใช้
+            // ค้นหาผู้ใช้จากฐานข้อมูล
             const user = await userModels.findByUsername(username);
             if (!user) {
-                return res.render('login', { error: 'Invalid username or password' });
+                return res.render('login', { 
+                    error: 'Invalid username or password', 
+                    formData: { username } 
+                });
             }
 
             // ตรวจสอบรหัสผ่าน
             const isMatch = await bcrypt.compare(password, user.Hashed_Password);
             if (!isMatch) {
-                return res.render('login', { error: 'Invalid username or password' });
+                return res.render('login', { 
+                    error: 'Invalid username or password', 
+                    formData: { username } 
+                });
             }
 
             // เก็บข้อมูลลง session
@@ -57,35 +74,44 @@ const userController = {
                 role: user.Roles
             };
 
-            // หลัง login สำเร็จ redirect ไปหน้า dashboard (หรือ home)
+            // หลัง login สำเร็จ redirect ไปหน้า dashboard หรือหน้า home
             res.redirect('/'); 
-        }
-        catch (error) {
+        } catch (error) {
+            console.error("Login error:", error);
             res.status(500).json({ err: error.message });
         }
     },
 
-    // ==========================
-    // ฟังก์ชัน Register
-    // ==========================
+    /**
+     * ฟังก์ชัน Register
+     */
     postRegister: async (req, res) => {
         try {
             const { username, email, password, confirm_password } = req.body;
 
             // ตรวจสอบว่ากรอกครบหรือไม่
             if (!username || !email || !password || !confirm_password) {
-                return res.render('register', { error: 'Please fill in all fields' });
+                return res.render('register', { 
+                    error: 'Please fill in all fields', 
+                    formData: { username, email } 
+                });
             }
 
             // ตรวจสอบรหัสผ่านตรงกันหรือไม่
             if (password !== confirm_password) {
-                return res.render('register', { error: 'Passwords do not match !!!' });
+                return res.render('register', { 
+                    error: 'Passwords do not match !!!', 
+                    formData: { username, email } 
+                });
             }
 
             // ตรวจสอบว่ามี username นี้แล้วหรือไม่
             const existingUser = await userModels.findByUsername(username);
             if (existingUser) {
-                return res.render('register', { error: 'Username already exists !!!' });
+                return res.render('register', { 
+                    error: 'Username already exists !!!', 
+                    formData: { username, email } 
+                });
             }
 
             // เข้ารหัสรหัสผ่าน
@@ -100,23 +126,25 @@ const userController = {
 
             // เสร็จแล้ว redirect ไปหน้า login
             res.redirect('/user/login');
-        }
-        catch (error) {
+        } catch (error) {
+            console.error("Register error:", error);
             res.status(500).json({ err: error.message });
         }
     },
 
-    // ==========================
-    // ฟังก์ชัน Logout
-    // ==========================
+    /**
+     * ฟังก์ชัน Logout
+     */
     postLogout: (req, res) => {
         req.session.destroy((err) => {
             if (err) {
+                console.error("Logout error:", err);
                 return res.status(500).json({ err: 'Logout failed' });
             }
             res.redirect('/user/login');
         });
     }
+
 };
 
 // ==========================

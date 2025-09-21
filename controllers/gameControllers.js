@@ -4,6 +4,9 @@
 // นำเข้าโมดูลที่จำเป็น
 // ==========================
 const gameModels = require('../models/gameModels'); // โมเดลสำหรับจัดการข้อมูลเกม
+const dayjs = require('dayjs');
+const relativeTime = require('dayjs/plugin/relativeTime');
+dayjs.extend(relativeTime); // เพิ่ม plugin สำหรับคำนวณเวลาสัมพันธ์ (time ago)
 
 // ==========================
 // Controller object รวมฟังก์ชันสำหรับจัดการเกม
@@ -11,27 +14,28 @@ const gameModels = require('../models/gameModels'); // โมเดลสำห�
 const gameController = {
 
     // ==========================
-    // ===== แสดงหน้าเพจ =====
+    // ======== PAGE VIEWS =======
     // ==========================
 
-    // แสดงหน้า Create Game
+    /**
+     * แสดงหน้า Create Game
+     */
     getCreateGamePage: (req, res) => {
-        // render หน้า create game พร้อม error เป็น null
         res.render('create_game', { error: null });
     },
 
-    // แสดงหน้า Edit Game
+    /**
+     * แสดงหน้า Edit Game
+     */
     getEditGamePage: async (req, res) => {
         try {
-            const gameId = parseInt(req.params.id, 10); // รับ game ID จาก params
+            const gameId = parseInt(req.params.id, 10);
             const game = await gameModels.findGameById(gameId);
 
             if (!game) {
-                // ถ้าไม่พบเกม แสดง 404
                 return res.status(404).send("Game not found");
             }
 
-            // render หน้า edit game พร้อมส่งข้อมูลเกม
             res.render('edit_game', { game });
         } catch (error) {
             console.error("Error fetching game:", error);
@@ -39,11 +43,41 @@ const gameController = {
         }
     },
 
+    /**
+     * แสดงหน้า View Game พร้อม Comment
+     */
+    getViewGamePage: async (req, res) => {
+        try {
+            const gameId = parseInt(req.params.id, 10);
+            const game = await gameModels.findGameById(gameId);
+
+            if (!game) {
+                return res.status(404).send("Game not found");
+            }
+
+            // ดึง comment ล่าสุดของเกมนี้
+            const comments = await gameModels.findReviewsByGameId(gameId);
+
+            // เพิ่ม timeAgo ให้แต่ละ comment
+            const commentsWithTimeAgo = comments.map(c => ({
+                ...c,
+                timeAgo: dayjs(c.Created_At).fromNow() // ตัวอย่าง: "10 days ago"
+            }));
+
+            res.render('view_game', { game, reviews: commentsWithTimeAgo });
+        } catch (error) {
+            console.error("Error fetching game:", error);
+            res.status(500).send("Internal Server Error");
+        }
+    },
+
     // ==========================
-    // ===== CRUD: GAME =====
+    // ======== GAME CRUD =======
     // ==========================
 
-    // สร้างเกมใหม่
+    /**
+     * สร้างเกมใหม่
+     */
     postCreateGame: async (req, res) => {
         try {
             const { title_game, description, status_game, details, tags = [] } = req.body;
@@ -65,33 +99,25 @@ const gameController = {
             // สร้าง tags สำหรับเกม
             await gameModels.createTags(newGame.Game_id, tags);
 
-            // response สำเร็จ
             res.send(`Game "${title_game}" created successfully!`);
         } catch (error) {
             console.error(error);
-            res.render('create', { error: 'Failed to create game. Please try again.' });
+            res.render('create_game', { error: 'Failed to create game. Please try again.' });
         }
     },
 
-    // อัปเดตเกม
+    /**
+     * อัปเดตเกม
+     */
     postUpdateGame: async (req, res) => {
         try {
             const gameId = parseInt(req.params.id, 10);
-
-            // ตรวจสอบว่า gameId เป็นตัวเลข
-            if (isNaN(gameId)) {
-                return res.status(400).send("Invalid game ID");
-            }
+            if (isNaN(gameId)) return res.status(400).send("Invalid game ID");
 
             const { Game_Title, Description, Status_Game, Details, tags } = req.body;
 
             // อัปเดตข้อมูลเกม
-            await gameModels.updateGame(gameId, {
-                Game_Title,
-                Description,
-                Status_Game,
-                Details
-            });
+            await gameModels.updateGame(gameId, { Game_Title, Description, Status_Game, Details });
 
             // แปลง tags เป็น object สำหรับอัปเดต
             const tagsData = {
@@ -106,7 +132,7 @@ const gameController = {
                 Other: tags?.includes("Other") ? 1 : 0
             };
 
-            // อัปเดต tags ในฐานข้อมูล
+            // อัปเดต tags
             await gameModels.updateTags(gameId, tagsData);
 
             res.send(`The Id ${gameId}, edit success!`);
@@ -117,48 +143,41 @@ const gameController = {
     },
 
     // ==========================
-    // ===== REVIEWS =====
+    // ======== REVIEWS =========
     // ==========================
 
-    // สร้าง Review ใหม่
+    /**
+     * สร้าง Review ใหม่
+     */
     postCreateReview: async (req, res) => {
         try {
-            // ตรวจสอบการ login
-            if (!req.session.user) {
-                return res.status(401).send("Unauthorized: Please log in first.");
-            }
+            if (!req.session.user) return res.status(401).send("Unauthorized: Please log in first.");
 
             const gameId = parseInt(req.params.id, 10);
             const { comment } = req.body;
 
-            // เพิ่ม review ลงฐานข้อมูล
             await gameModels.createReview({
                 game_id: gameId,
                 user_id: req.session.user.id,
                 comment
             });
 
-            // ตอบกลับเมื่อสำเร็จ (ตรงนี้สามารถ redirect หรือส่ง JSON ได้ตามต้องการ)
             res.send("Review added successfully!");
-        }
-        catch (error) {
+        } catch (error) {
             console.error("Error creating review:", error);
             res.status(500).send("Internal Server Error");
         }
     },
 
-    // ดึง Review ของเกม
+    /**
+     * ดึง Review ของเกม
+     */
     getGameReview: async (req, res) => {
         try {
             const gameId = parseInt(req.params.id, 10);
-
-            // ดึง review ทั้งหมดตาม gameId
             const review = await gameModels.findReviewsByGameId(gameId);
-
-            // ส่ง response (ปัจจุบันยังไม่ได้ render)
             res.json(review);
-        }
-        catch (error) {
+        } catch (error) {
             console.error("Error fetching reviews:", error);
             res.status(500).send("Internal Server Error");
         }
