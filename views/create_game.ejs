@@ -1,5 +1,5 @@
 <!-- ==========================
-     views/create.ejs
+     views/create_game.ejs
      ========================== -->
 <!DOCTYPE html>
 <html lang="en">
@@ -7,10 +7,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
+
+    <!-- ==========================
+         CSS Libraries
+         ========================== -->
     <!-- Select2 CSS สำหรับ multi-select -->
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-    
+
     <title>Create Game</title>
 </head>
 
@@ -47,7 +50,7 @@
         <br>
 
         <!-- เลือก Tags ของเกม (multi-select) -->
-        <label for="tags">Tags:</label>
+        <label for="tags">Tags: </label>
         <select id="tags" name="tags[]" multiple="multiple">
             <option value="Action">Action</option>
             <option value="Adventure">Adventure</option>
@@ -66,18 +69,21 @@
     </form>
 
     <!-- ==========================
-         Script สำหรับ jQuery และ Select2
+         JavaScript Libraries
          ========================== -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
+    <!-- ==========================
+         Script สำหรับ Initializing Select2
+         ========================== -->
     <script>
         $(document).ready(function () {
             // ใช้งาน Select2 สำหรับ multi-select tags
             $('#tags').select2({
                 placeholder: "เลือก Tags",  // ข้อความ placeholder
-                allowClear: true,            // สามารถลบค่าที่เลือกได้
-                tags: true                   // เพิ่ม tag ใหม่ได้เอง
+                allowClear: true,           // สามารถลบค่าที่เลือกได้
+                tags: true                  // เพิ่ม tag ใหม่ได้เอง
             });
         });
     </script>

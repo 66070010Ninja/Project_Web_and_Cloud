@@ -11,16 +11,16 @@ const gameModels = require('../models/gameModels'); // โมเดลสำห�
 const gameController = {
 
     // ==========================
-    // แสดงหน้า Create Game
+    // ===== แสดงหน้าเพจ =====
     // ==========================
+
+    // แสดงหน้า Create Game
     getCreateGamePage: (req, res) => {
         // render หน้า create game พร้อม error เป็น null
-        res.render('create', { error: null });
+        res.render('create_game', { error: null });
     },
 
-    // ==========================
     // แสดงหน้า Edit Game
-    // ==========================
     getEditGamePage: async (req, res) => {
         try {
             const gameId = parseInt(req.params.id, 10); // รับ game ID จาก params
@@ -40,8 +40,10 @@ const gameController = {
     },
 
     // ==========================
-    // สร้างเกมใหม่
+    // ===== CRUD: GAME =====
     // ==========================
+
+    // สร้างเกมใหม่
     postCreateGame: async (req, res) => {
         try {
             const { title_game, description, status_game, details, tags = [] } = req.body;
@@ -63,7 +65,7 @@ const gameController = {
             // สร้าง tags สำหรับเกม
             await gameModels.createTags(newGame.Game_id, tags);
 
-            // สามารถ redirect หรือส่ง response สำเร็จได้ตามต้องการ
+            // response สำเร็จ
             res.send(`Game "${title_game}" created successfully!`);
         } catch (error) {
             console.error(error);
@@ -71,14 +73,12 @@ const gameController = {
         }
     },
 
-    // ==========================
     // อัปเดตเกม
-    // ==========================
     postUpdateGame: async (req, res) => {
         try {
             const gameId = parseInt(req.params.id, 10);
 
-            // ตรวจสอบว่าค่า gameId เป็นตัวเลข
+            // ตรวจสอบว่า gameId เป็นตัวเลข
             if (isNaN(gameId)) {
                 return res.status(400).send("Invalid game ID");
             }
@@ -116,8 +116,14 @@ const gameController = {
         }
     },
 
+    // ==========================
+    // ===== REVIEWS =====
+    // ==========================
+
+    // สร้าง Review ใหม่
     postCreateReview: async (req, res) => {
         try {
+            // ตรวจสอบการ login
             if (!req.session.user) {
                 return res.status(401).send("Unauthorized: Please log in first.");
             }
@@ -125,11 +131,15 @@ const gameController = {
             const gameId = parseInt(req.params.id, 10);
             const { comment } = req.body;
 
+            // เพิ่ม review ลงฐานข้อมูล
             await gameModels.createReview({
                 game_id: gameId,
                 user_id: req.session.user.id,
                 comment
             });
+
+            // ตอบกลับเมื่อสำเร็จ (ตรงนี้สามารถ redirect หรือส่ง JSON ได้ตามต้องการ)
+            res.send("Review added successfully!");
         }
         catch (error) {
             console.error("Error creating review:", error);
@@ -137,10 +147,16 @@ const gameController = {
         }
     },
 
+    // ดึง Review ของเกม
     getGameReview: async (req, res) => {
         try {
             const gameId = parseInt(req.params.id, 10);
+
+            // ดึง review ทั้งหมดตาม gameId
             const review = await gameModels.findReviewsByGameId(gameId);
+
+            // ส่ง response (ปัจจุบันยังไม่ได้ render)
+            res.json(review);
         }
         catch (error) {
             console.error("Error fetching reviews:", error);

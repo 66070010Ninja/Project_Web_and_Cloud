@@ -15,7 +15,6 @@ const userController = {
     // แสดงหน้า Login
     // ==========================
     getLoginPage: (req, res) => {
-        // render หน้า login และส่งค่า error เป็น null (เริ่มต้น)
         res.render('login', { error: null });
     },
 
@@ -23,7 +22,6 @@ const userController = {
     // แสดงหน้า Register
     // ==========================
     getRegisterPage: (req, res) => {
-        // render หน้า register และส่งค่า error เป็น null (เริ่มต้น)
         res.render('register', { error: null });
     },
 
@@ -32,22 +30,26 @@ const userController = {
     // ==========================
     postLogin: async (req, res) => {
         try {
-            const { username, password } = req.body; // รับค่าจากฟอร์ม login
+            const { username, password } = req.body;
 
-            // ค้นหาผู้ใช้จาก username
+            // ตรวจสอบว่ากรอกครบหรือไม่
+            if (!username || !password) {
+                return res.render('login', { error: 'Please fill in all fields' });
+            }
+
+            // ค้นหาผู้ใช้
             const user = await userModels.findByUsername(username);
             if (!user) {
-                // ถ้าไม่พบผู้ใช้ แสดง error
                 return res.render('login', { error: 'Invalid username or password' });
             }
 
-            // ตรวจสอบรหัสผ่านว่าตรงกับ hashed password หรือไม่
+            // ตรวจสอบรหัสผ่าน
             const isMatch = await bcrypt.compare(password, user.Hashed_Password);
             if (!isMatch) {
                 return res.render('login', { error: 'Invalid username or password' });
             }
 
-            // เก็บข้อมูลผู้ใช้ไว้ใน session หลัง login สำเร็จ
+            // เก็บข้อมูลลง session
             req.session.user = {
                 id: user.User_id,
                 username: user.User_Name,
@@ -55,11 +57,10 @@ const userController = {
                 role: user.Roles
             };
 
-            // ส่งข้อความยืนยัน login สำเร็จ
-            res.send(`Welcome ${user.User_Name}, login success!`);
+            // หลัง login สำเร็จ redirect ไปหน้า dashboard (หรือ home)
+            res.redirect('/'); 
         }
         catch (error) {
-            // กรณีเกิดข้อผิดพลาด ส่ง status 500 พร้อม message
             res.status(500).json({ err: error.message });
         }
     },
@@ -69,40 +70,56 @@ const userController = {
     // ==========================
     postRegister: async (req, res) => {
         try {
-            const { username, email, password, confirm_password } = req.body; // รับค่าจากฟอร์ม register
+            const { username, email, password, confirm_password } = req.body;
 
-            // ตรวจสอบรหัสผ่านสองช่องให้ตรงกัน
+            // ตรวจสอบว่ากรอกครบหรือไม่
+            if (!username || !email || !password || !confirm_password) {
+                return res.render('register', { error: 'Please fill in all fields' });
+            }
+
+            // ตรวจสอบรหัสผ่านตรงกันหรือไม่
             if (password !== confirm_password) {
                 return res.render('register', { error: 'Passwords do not match !!!' });
             }
 
-            // ตรวจสอบว่ามี username นี้อยู่แล้วหรือไม่
+            // ตรวจสอบว่ามี username นี้แล้วหรือไม่
             const existingUser = await userModels.findByUsername(username);
             if (existingUser) {
                 return res.render('register', { error: 'Username already exists !!!' });
             }
 
-            // เข้ารหัสรหัสผ่าน (bcrypt)
-            const hashedpassword = await bcrypt.hash(password, 10);
+            // เข้ารหัสรหัสผ่าน
+            const hashedPassword = await bcrypt.hash(password, 10);
 
-            // สร้างผู้ใช้ใหม่ในฐานข้อมูล
+            // บันทึกผู้ใช้ใหม่
             await userModels.create({
                 username,
                 email,
-                password: hashedpassword
+                password: hashedPassword
             });
 
-            // หลังลงทะเบียนสำเร็จ redirect ไปหน้า login
+            // เสร็จแล้ว redirect ไปหน้า login
             res.redirect('/user/login');
         }
         catch (error) {
-            // กรณีเกิดข้อผิดพลาด ส่ง status 500 พร้อม message
             res.status(500).json({ err: error.message });
         }
     },
+
+    // ==========================
+    // ฟังก์ชัน Logout
+    // ==========================
+    postLogout: (req, res) => {
+        req.session.destroy((err) => {
+            if (err) {
+                return res.status(500).json({ err: 'Logout failed' });
+            }
+            res.redirect('/user/login');
+        });
+    }
 };
 
 // ==========================
-// ส่งออก controller เพื่อใช้ใน route
+// ส่งออก controller
 // ==========================
 module.exports = userController;

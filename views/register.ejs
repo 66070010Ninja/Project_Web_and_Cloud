@@ -7,6 +7,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>Register</title> <!-- ชื่อหน้าเว็บ -->
 </head>
 
@@ -14,9 +15,10 @@
     <h2>Register</h2> <!-- หัวข้อหน้า Register -->
 
     <!-- ==========================
-         ฟอร์มสำหรับส่งข้อมูล register
+         ฟอร์มสำหรับสมัครสมาชิก
          ========================== -->
     <form action="/user/register" method="post">
+
         <!-- ช่องกรอกชื่อผู้ใช้ -->
         <label for="username">Username: </label>
         <input type="text" id="username" name="username" required>
@@ -32,8 +34,8 @@
         <input type="password" id="password" name="password" required>
         <br>
 
-        <!-- ช่องกรอกยืนยันรหัสผ่าน -->
-        <label for="confirm_password">Confirm password: </label>
+        <!-- ช่องยืนยันรหัสผ่าน -->
+        <label for="confirm_password">Confirm Password: </label>
         <input type="password" id="confirm_password" name="confirm_password" required>
         <br>
 
@@ -42,7 +44,7 @@
     </form>
 
     <!-- ==========================
-         แสดงข้อความ error หากมี
+         แสดงข้อความ Error หากมี
          ========================== -->
     <% if (error) { %>
         <p style="color:red;">

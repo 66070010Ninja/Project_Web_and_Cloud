@@ -7,6 +7,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>Login</title> <!-- ชื่อหน้าเว็บ -->
 </head>
 
@@ -14,9 +15,10 @@
     <h2>Login</h2> <!-- หัวข้อหน้า Login -->
 
     <!-- ==========================
-         ฟอร์มสำหรับส่งข้อมูล login
+         ฟอร์มสำหรับเข้าสู่ระบบ
          ========================== -->
     <form action="/user/login" method="post">
+        
         <!-- ช่องกรอกชื่อผู้ใช้ -->
         <label for="username">Username: </label>
         <input type="text" id="username" name="username" required>
@@ -32,7 +34,7 @@
     </form>
 
     <!-- ==========================
-         แสดงข้อความ error หากมี
+         แสดงข้อความ Error หากมี
          ========================== -->
     <% if (error) { %>
         <p style="color:red;">
