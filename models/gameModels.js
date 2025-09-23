@@ -14,19 +14,16 @@ const gameModels = {
     // ==========================
     // สร้างเกมใหม่
     // ==========================
-    createGame: async (data) => {
-        return await prisma.games.create({
-            data: {
-                User_id: data.user_id,           // ID ผู้ใช้ที่สร้างเกม
-                Game_Title: data.title_game,     // ชื่อเกม
-                Description: data.description,   // คำอธิบายเกม
-                Status_Game: data.status_game,   // สถานะเกม
-                Details: data.details,           // รายละเอียดเพิ่มเติม
-                Game_Image: "default.png",       // ตั้งค่า default image
-                File_Game: "default.zip"         // ตั้งค่า default file
-            }
-        });
-    },
+    createGame: async (data) => prisma.games.create({
+        data: {
+            User_id: data.user_id,
+            Game_Title: data.title_game,
+            Description: data.description,
+            Status_Game: data.status_game,
+            Details: data.details,
+            File_Game: data.File_Game || "default.zip"
+        }
+    }),
 
     // ==========================
     // สร้าง tags สำหรับเกม
@@ -47,6 +44,16 @@ const gameModels = {
             }
         });
     },
+
+    createImage: async (data) => {
+        return await prisma.game_image.create({
+            data: {
+                Path: `/game/img/${data.url}`, // path ของไฟล์
+                Game_id: data.game_id          // ID ของเกมที่ relation
+            }
+        });
+    },
+
 
     // ==========================
     // ค้นหาเกมด้วย ID

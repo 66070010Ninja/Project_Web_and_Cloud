@@ -1,4 +1,4 @@
-// controllers/gameController.js
+// controllers/gameControllers.js
 
 // ==========================
 // นำเข้าโมดูลที่จำเป็น
@@ -6,6 +6,8 @@
 const gameModels = require('../models/gameModels'); // โมเดลสำหรับจัดการข้อมูลเกม
 const dayjs = require('dayjs');
 const relativeTime = require('dayjs/plugin/relativeTime');
+const path = require('path');
+const fs = require('fs');
 dayjs.extend(relativeTime); // เพิ่ม plugin สำหรับคำนวณเวลาสัมพันธ์ (time ago)
 
 // ==========================
@@ -82,29 +84,50 @@ const gameController = {
         try {
             const { title_game, description, status_game, details, tags = [] } = req.body;
 
-            // ตรวจสอบว่าผู้ใช้ login หรือยัง
-            if (!req.session.user) {
-                return res.status(401).send('Unauthorized: Please log in first.');
-            }
+            if (!req.session.user) return res.status(401).json({ error: "กรุณาเข้าสู่ระบบก่อน" });
+            if (!req.files || !req.files.file_game) return res.status(400).json({ error: "ต้องเลือกไฟล์เกม (.zip)" });
 
-            // สร้างเกมใหม่ในฐานข้อมูล
+            const gameFile = req.files.file_game;
+            if (!gameFile.name.endsWith(".zip")) return res.status(400).json({ error: "ไฟล์เกมต้องเป็น .zip" });
+
+            const gameFileName = Date.now() + "_" + gameFile.name;
+            const gameFilePath = path.join(__dirname, "../public/game/file", gameFileName);
+            fs.writeFileSync(gameFilePath, gameFile.data);
+
             const newGame = await gameModels.createGame({
                 user_id: req.session.user.id,
                 title_game,
                 description,
                 status_game,
-                details
+                details,
+                File_Game: gameFileName
             });
 
-            // สร้าง tags สำหรับเกม
-            await gameModels.createTags(newGame.Game_id, tags);
+            if (req.files.images) {
+                const images = Array.isArray(req.files.images) ? req.files.images : [req.files.images];
+                for (let img of images) {
+                    const imageName = Date.now() + "_" + img.name;
+                    const imagePath = path.join(__dirname, "../public/game/img", imageName);
+                    fs.writeFileSync(imagePath, img.data);
 
-            res.send(`Game "${title_game}" created successfully!`);
-        } catch (error) {
-            console.error(error);
-            res.render('create_game', { error: 'Failed to create game. Please try again.' });
+                    // เรียก createImage
+                    await gameModels.createImage({
+                        url: imageName,
+                        game_id: newGame.Game_id
+                    });
+                }
+            }
+
+
+            if (tags.length > 0) await gameModels.createTags(newGame.Game_id, tags);
+
+            res.json({ message: "สร้างเกมสำเร็จ", game: newGame });
+        } catch (err) {
+            console.error(err);
+            res.status(500).json({ error: "สร้างเกมไม่สำเร็จ กรุณาลองใหม่" });
         }
     },
+
 
     /**
      * อัปเดตเกม

@@ -29,6 +29,12 @@ router.get('/login', userController.getLoginPage);
 // ประมวลผลการส่งฟอร์ม login
 router.post('/login', userController.postLogin);
 
+router.get('/view/:id', userController.getViewPage);
+
+router.get('/edit', userController.getEditProfilePage);
+
+router.post('/edit/:id', userController.postEditProfile);
+
 // ==========================
 // ส่งออก router
 // ==========================

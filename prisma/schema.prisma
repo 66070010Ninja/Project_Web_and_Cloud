@@ -42,7 +42,6 @@ model games {
   User_id      Int
   Game_Title   String    @db.VarChar(255)
   Description  String?   @db.VarChar(255)
-  Game_Image   String    @db.VarChar(255)
   File_Game    String    @db.VarChar(255)
   Status_Game  String?   @db.VarChar(255)
   Log_Game     String?   @db.VarChar(255)
@@ -55,8 +54,16 @@ model games {
 
   // ความสัมพันธ์
   account account @relation(fields: [User_id], references: [User_id])
+  images  game_image[]
   review  review[] // เปลี่ยนเป็น one-to-many
   tags    tags? 
+}
+
+model game_image {
+  Game_Image_id       Int    @id @default(autoincrement())
+  Path     String
+  Game_id   Int
+  games    games   @relation(fields: [Game_id], references: [Game_id])
 }
 
 // ==========================

@@ -1,33 +1,33 @@
-<!-- ==========================
-     views/create_game.ejs
-     ========================== -->
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <!-- ==========================
-         CSS Libraries
-         ========================== -->
-    <!-- Select2 CSS สำหรับ multi-select -->
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-
     <title>Create Game</title>
 </head>
 
 <body>
     <h2>Create Game</h2>
 
-    <!-- ==========================
-         Form สำหรับสร้างเกมใหม่
-         ========================== -->
-    <form action="/game/create" method="post">
+    <form id="gameForm" action="/game/create" method="POST" enctype="multipart/form-data">
 
         <!-- ชื่อเกม -->
         <label for="title_game">Title Game: </label>
         <input type="text" name="title_game" id="title_game" required>
+        <br>
+
+        <!-- รูปภาพเกม -->
+        <label for="images_game">Upload Image Game: </label>
+        <input type="file" id="images_game" multiple>
+        <div id="preview" style="display:flex; flex-wrap:wrap; gap:10px; margin-block-start:10px;"></div>
+        <br>
+
+        <!-- ไฟล์เกม (.zip) -->
+        <label for="file_game">Upload File Game (.zip): </label>
+        <input type="file" id="file_game" accept=".zip">
+        <div id="fileGameName" style="color:green; margin-block-start:5px;"></div>
         <br>
 
         <!-- คำอธิบายสั้น -->
@@ -49,7 +49,7 @@
         <input type="text" name="details" id="details" required>
         <br>
 
-        <!-- เลือก Tags ของเกม (multi-select) -->
+        <!-- Tags -->
         <label for="tags">Tags: </label>
         <select id="tags" name="tags[]" multiple="multiple">
             <option value="Action">Action</option>
@@ -64,27 +64,87 @@
         </select>
         <br>
 
-        <!-- ปุ่มส่งฟอร์ม -->
         <button type="submit">Create</button>
     </form>
 
-    <!-- ==========================
-         JavaScript Libraries
-         ========================== -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
-    <!-- ==========================
-         Script สำหรับ Initializing Select2
-         ========================== -->
     <script>
         $(document).ready(function () {
-            // ใช้งาน Select2 สำหรับ multi-select tags
-            $('#tags').select2({
-                placeholder: "เลือก Tags",  // ข้อความ placeholder
-                allowClear: true,           // สามารถลบค่าที่เลือกได้
-                tags: true                  // เพิ่ม tag ใหม่ได้เอง
+            $('#tags').select2({ placeholder: "เลือก Tags", allowClear: true, tags: true });
+        });
+
+        let selectedFiles = [];
+        let selectedGameFile = null;
+
+        // Image preview
+        document.getElementById('images_game').addEventListener('change', function () {
+            for (let file of this.files) selectedFiles.push(file);
+            renderPreview();
+            this.value = "";
+        });
+
+        function removeImage(index) {
+            selectedFiles.splice(index, 1);
+            renderPreview();
+        }
+
+        function renderPreview() {
+            const preview = document.getElementById('preview');
+            preview.innerHTML = "";
+            selectedFiles.forEach((file, i) => {
+                const div = document.createElement('div');
+                div.style.position = "relative";
+
+                const img = document.createElement('img');
+                img.src = URL.createObjectURL(file);
+                img.width = 150;
+
+                const btn = document.createElement('button');
+                btn.innerText = "✖";
+                btn.style = "position:absolute;inset-block-start:0;inset-inline-end:0;background:red;color:white;border:none;cursor:pointer;";
+                btn.onclick = () => removeImage(i);
+
+                div.appendChild(img);
+                div.appendChild(btn);
+                preview.appendChild(div);
             });
+        }
+
+        // Game zip file
+        document.getElementById('file_game').addEventListener('change', function () {
+            const file = this.files[0];
+            const fileNameDiv = document.getElementById('fileGameName');
+            if (file) {
+                if (file.name.endsWith('.zip')) {
+                    selectedGameFile = file;
+                    fileNameDiv.innerText = "Selected: " + file.name;
+                } else {
+                    alert("ไฟล์ต้องเป็น .zip เท่านั้น!");
+                    this.value = "";
+                    selectedGameFile = null;
+                    fileNameDiv.innerText = "";
+                }
+            }
+        });
+
+        // Submit form
+        document.getElementById("gameForm").addEventListener("submit", function (e) {
+            e.preventDefault();
+            if (!selectedGameFile) { alert("กรุณาเลือกไฟล์เกม (.zip) ด้วย!"); return; }
+
+            const formData = new FormData(this);
+            selectedFiles.forEach(file => formData.append("images", file));
+            formData.append("file_game", selectedGameFile);
+
+            fetch("/game/create", { method: "POST", body: formData })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.error) { alert(data.error); return; }
+                    alert("สร้างเกมสำเร็จ!");
+                    window.location.href = "/game/view/" + data.game.Game_id;
+                }).catch(err => console.error(err));
         });
     </script>
 </body>

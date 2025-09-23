@@ -38,6 +38,23 @@ const userModels = {
             }
         });
     },
+
+    findByUserID: async (user_id) => {
+        return await prisma.account.findUnique({
+            where: {
+                User_id: user_id
+            }
+        });
+    },
+
+    updateUser: async (id, data) => {
+        return await prisma.account.update({
+            where: {
+                User_id: id
+            },
+            data: data
+        });
+    },
 };
 
 // ==========================
