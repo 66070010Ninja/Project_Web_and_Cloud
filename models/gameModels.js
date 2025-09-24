@@ -113,6 +113,49 @@ const gameModels = {
         });
     },
 
+    // ฟังก์ชันดึงเกมทั้งหมด
+    getAllGames: async () => {
+        return await prisma.games.findMany({
+            include: { tags: true },   // ถ้าอยากดึง tags ด้วย
+            orderBy: { Game_id: 'desc' } // เรียงจากล่าสุด
+        });
+    },
+
+    // ----------------------
+    // ดึงรูปภาพของเกม
+    // ----------------------
+    findImagesByGameId: async (gameId) => {
+        return await prisma.game_image.findMany({
+            where: { Game_id: gameId },
+            select: { Path: true, Game_Image_id: true } // ส่ง Path และ ID
+        });
+    },
+
+    // ----------------------
+    // ลบรูปภาพด้วย ID
+    // ----------------------
+    deleteImage: async (imageId) => {
+        return await prisma.game_image.delete({
+            where: { Game_Image_id: imageId }
+        });
+    },
+
+    // ----------------------
+    // ดึง tags ของเกม (ส่งเป็น array ของชื่อ tag ที่มีค่า 1)
+    // ----------------------
+    findTagsByGameId: async (gameId) => {
+        const tagRecord = await prisma.tags.findUnique({
+            where: { Game_id: gameId }
+        });
+        if (!tagRecord) return [];
+
+        const tagNames = [];
+        for (let key of ["Action", "Adventure", "Card_Game", "Educational", "Fighting", "Interactive_Fiction", "Puzzle", "Racing", "Other"]) {
+            if (tagRecord[key] === 1) tagNames.push(key);
+        }
+        return tagNames;
+    },
+
 };
 
 // --------------------------

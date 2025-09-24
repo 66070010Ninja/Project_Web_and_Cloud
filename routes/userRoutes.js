@@ -29,6 +29,8 @@ router.get('/login', userController.getLoginPage);
 // Login User (POST)
 router.post('/login', userController.postLogin);
 
+router.post('/logout', userController.postLogout);
+
 // View User Profile by ID (GET)
 router.get('/view/:id', userController.getViewPage);
 

@@ -11,76 +11,99 @@
     <!-- ==========================
          CSS Libraries
          ========================== -->
-    <!-- Select2 CSS สำหรับ multi-select -->
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 
-    <title><%= game.Game_Title %></title> <!-- แสดงชื่อเกม -->
+    <title><%= game.Game_Title %></title>
 </head>
 
 <body>
-    <h2>View Game</h2> <!-- หัวข้อหลัก -->
+    <a href="/" class="btn">Home</a>
+    <h2>View Game</h2>
 
     <!-- ==========================
-         Form สำหรับแสดงข้อมูลเกม (Read-Only)
+         Game Info (Read-Only)
          ========================== -->
-    <form action="/game/edit/<%= game.Game_id %>" method="POST">
-        <h1><%= game.Game_Title %></h1>
+    <h1><%= game.Game_Title %></h1>
 
-        <!-- ชื่อเกม -->
-        <label for="Game_Title">Title:</label>
-        <input type="text" id="Game_Title" name="Game_Title" value="<%= game.Game_Title %>" readonly>
-        <br>
+    <!-- ชื่อเกม -->
+    <label>Title:</label>
+    <input type="text" value="<%= game.Game_Title %>" readonly>
+    <br>
 
-        <!-- คำอธิบายเกม -->
-        <label for="Description">Description:</label>
-        <textarea id="Description" name="Description" readonly><%= game.Description %></textarea>
-        <br>
+    <!-- คำอธิบายเกม -->
+    <label>Description:</label>
+    <textarea readonly><%= game.Description %></textarea>
+    <br>
 
-        <!-- สถานะเกม -->
-        <label for="status_game">Status:</label>
-        <select id="status_game" name="status_game" disabled>
-            <option value="Alpha" <%= game.Status_Game === "Alpha" ? "selected" : "" %>>Alpha</option>
-            <option value="Beta" <%= game.Status_Game === "Beta" ? "selected" : "" %>>Beta</option>
-            <option value="Released" <%= game.Status_Game === "Released" ? "selected" : "" %>>Released</option>
-        </select>
-        <br>
+    <!-- สถานะเกม -->
+    <label>Status:</label>
+    <select disabled>
+        <option value="Alpha" <%= game.Status_Game === "Alpha" ? "selected" : "" %>>Alpha</option>
+        <option value="Beta" <%= game.Status_Game === "Beta" ? "selected" : "" %>>Beta</option>
+        <option value="Released" <%= game.Status_Game === "Released" ? "selected" : "" %>>Released</option>
+    </select>
+    <br>
 
-        <!-- รายละเอียดเพิ่มเติม -->
-        <label for="Details">Details:</label>
-        <textarea id="Details" name="Details" readonly><%= game.Details %></textarea>
-        <br>
+    <!-- รายละเอียดเพิ่มเติม -->
+    <label>Details:</label>
+    <textarea readonly><%= game.Details %></textarea>
+    <br>
 
-        <!-- Tags ของเกม (multi-select) -->
-        <label for="tags">Tags:</label>
-        <select id="tags" name="tags[]" multiple="multiple" disabled>
-            <option value="Action" <%= game.tags?.Action ? "selected" : "" %>>Action</option>
-            <option value="Adventure" <%= game.tags?.Adventure ? "selected" : "" %>>Adventure</option>
-            <option value="Card_Game" <%= game.tags?.Card_Game ? "selected" : "" %>>Card Game</option>
-            <option value="Educational" <%= game.tags?.Educational ? "selected" : "" %>>Educational</option>
-            <option value="Fighting" <%= game.tags?.Fighting ? "selected" : "" %>>Fighting</option>
-            <option value="Interactive_Fiction" <%= game.tags?.Interactive_Fiction ? "selected" : "" %>>Interactive Fiction</option>
-            <option value="Puzzle" <%= game.tags?.Puzzle ? "selected" : "" %>>Puzzle</option>
-            <option value="Racing" <%= game.tags?.Racing ? "selected" : "" %>>Racing</option>
-            <option value="Other" <%= game.tags?.Other ? "selected" : "" %>>Other</option>
-        </select>
-        <br>
-    </form>
+    <!-- Tags -->
+    <label>Tags:</label>
+    <select id="tags" multiple="multiple" disabled>
+        <% const tagList = ["Action","Adventure","Card_Game","Educational","Fighting","Interactive_Fiction","Puzzle","Racing","Other"]; %>
+        <% tagList.forEach(tag => { %>
+            <option value="<%= tag %>" <%= game.tags?.[tag] === 1 ? "selected" : "" %>><%= tag.replace("_"," ") %></option>
+        <% }) %>
+    </select>
+    <br>
 
     <!-- ==========================
-         Section สำหรับ Comments
+         Game Images
+         ========================== -->
+    <h3>Game Images</h3>
+    <div id="gameImages" style="display:flex; flex-wrap:wrap; gap:10px;">
+        <% if(game.images && game.images.length > 0){ %>
+            <% game.images.forEach(img => { %>
+                <div style="position:relative;">
+                    <img src="<%= img %>" width="150" style="border:1px solid #ccc; padding:2px;">
+                </div>
+            <% }) %>
+        <% } else { %>
+            <p>No images available.</p>
+        <% } %>
+    </div>
+    <br>
+
+    <!-- ==========================
+         Download Game File
+         ========================== -->
+    <h3>Download Game File</h3>
+    <% if(game.File_Game){ %>
+        <a href="<%= game.File_Game %>" download>
+            <button type="button">Download Game (.zip)</button>
+        </a>
+    <% } else { %>
+        <p>No game file available.</p>
+    <% } %>
+    <br><br>
+
+    <!-- ==========================
+         Comments Section
          ========================== -->
     <h3>Comments</h3>
 
-    <!-- 1. Form สำหรับโพสต์ comment -->
+    <!-- Post comment -->
     <form action="/game/review/<%= game.Game_id %>" method="POST">
         <textarea name="comment" placeholder="Write your comment..." required></textarea>
         <br>
         <button type="submit">Post Comment</button>
     </form>
 
-    <!-- 2. แสดง comment ทั้งหมด -->
+    <!-- Display comments -->
     <% reviews.forEach(r => { %>
-        <div class="comment">
+        <div class="comment" style="border-top:1px solid #ccc; padding:5px 0;">
             <strong><%= r.account ? r.account.User_Name : 'Unknown User' %></strong>
             <span style="color:gray; font-size:0.9em;"><%= r.timeAgo %></span>
             <p><%= r.Comment %></p>
@@ -93,19 +116,15 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
-    <!-- ==========================
-         Script สำหรับ Initializing Select2
-         ========================== -->
+    <!-- Initialize Select2 -->
     <script>
         $(document).ready(function () {
-            // ใช้งาน Select2 สำหรับ multi-select tags
             $('#tags').select2({
-                placeholder: "เลือก Tags",  // ข้อความ placeholder
-                allowClear: true,           // สามารถลบค่าที่เลือกได้
-                tags: true                  // สามารถเพิ่ม tag ใหม่เองได้
+                placeholder: "เลือก Tags",
+                allowClear: true,
+                tags: true
             });
         });
     </script>
 </body>
-
 </html>

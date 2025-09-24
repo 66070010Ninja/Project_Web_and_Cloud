@@ -45,18 +45,22 @@ app.use(fileUpload());
 
 // กำหนดให้เข้าถึงไฟล์ static ได้จาก /public (เช่น CSS, JS, รูปภาพ)
 app.use('/public', express.static(path.join(__dirname, 'public')));
+app.use(express.static('public'));
 
 // --------------------------
 // Routes
 // --------------------------
 const userRoute = require('./routes/userRoutes');
 const gameRoute = require('./routes/gameRoutes');
+const pageRoute = require('./routes/pageRoutes');
 
 // เส้นทางที่เกี่ยวข้องกับผู้ใช้
 app.use('/user', userRoute);
 
 // เส้นทางที่เกี่ยวข้องกับเกม
 app.use('/game', gameRoute);
+
+app.use('/', pageRoute);
 
 // --------------------------
 // Start Server

@@ -29,7 +29,7 @@
         <br>
 
         <!-- อัปโหลดรูปภาพเกม -->
-        <label for="images_game">Upload Image Game: </label>
+        <label for="images_game">Upload Image Game (อย่างน้อย 1 รูป): </label>
         <input type="file" id="images_game" multiple>
         <div id="preview" style="display:flex; flex-wrap:wrap; gap:10px; margin-block-start:10px;"></div>
         <br>
@@ -60,8 +60,8 @@
         <br>
 
         <!-- Tags -->
-        <label for="tags">Tags: </label>
-        <select id="tags" name="tags[]" multiple="multiple">
+        <label for="tags">Tags (เลือกอย่างน้อย 1 ตัว): </label>
+        <select id="tags" multiple="multiple">
             <option value="Action">Action</option>
             <option value="Adventure">Adventure</option>
             <option value="Card_Game">Card Game</option>
@@ -85,121 +85,90 @@
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
     <script>
-        // ==========================
-        // 1) Initial select2 (multi-select)
-        // ==========================
-        $(document).ready(function () {
-            $('#tags').select2({
-                placeholder: "เลือก Tags",
-                allowClear: true,
-                tags: true
-            });
+    $(document).ready(function () {
+        $('#tags').select2({
+            placeholder: "เลือก Tags",
+            allowClear: true,
+            tags: true
         });
+    });
 
-        // ==========================
-        // ตัวแปรเก็บไฟล์
-        // ==========================
-        let selectedFiles = [];      // ไฟล์รูปภาพ
-        let selectedGameFile = null; // ไฟล์เกม .zip
+    let selectedFiles = [];
+    let selectedGameFile = null;
 
-        // ==========================
-        // 2) เลือกรูปภาพ -> preview
-        // ==========================
-        document.getElementById('images_game').addEventListener('change', function () {
-            for (let file of this.files) selectedFiles.push(file);
-            renderPreview();
-            this.value = ""; // reset ค่า input file
+    // preview รูปภาพ
+    document.getElementById('images_game').addEventListener('change', function () {
+        for (let file of this.files) selectedFiles.push(file);
+        renderPreview();
+        this.value = "";
+    });
+    function removeImage(index) {
+        selectedFiles.splice(index, 1);
+        renderPreview();
+    }
+    function renderPreview() {
+        const preview = document.getElementById('preview');
+        preview.innerHTML = "";
+        selectedFiles.forEach((file, i) => {
+            const div = document.createElement('div');
+            div.style.position = "relative";
+            const img = document.createElement('img');
+            img.src = URL.createObjectURL(file);
+            img.width = 150;
+            const btn = document.createElement('button');
+            btn.innerText = "✖";
+            btn.style = "position:absolute;inset-block-start:0;inset-inline-end:0;background:red;color:white;border:none;cursor:pointer;";
+            btn.onclick = () => removeImage(i);
+            div.appendChild(img);
+            div.appendChild(btn);
+            preview.appendChild(div);
         });
+    }
 
-        // ฟังก์ชันลบรูป
-        function removeImage(index) {
-            selectedFiles.splice(index, 1);
-            renderPreview();
-        }
-
-        // ฟังก์ชันแสดง preview
-        function renderPreview() {
-            const preview = document.getElementById('preview');
-            preview.innerHTML = "";
-
-            selectedFiles.forEach((file, i) => {
-                const div = document.createElement('div');
-                div.style.position = "relative";
-
-                // แสดงรูป
-                const img = document.createElement('img');
-                img.src = URL.createObjectURL(file);
-                img.width = 150;
-
-                // ปุ่มลบ
-                const btn = document.createElement('button');
-                btn.innerText = "✖";
-                btn.style = "position:absolute;inset-block-start:0;inset-inline-end:0;background:red;color:white;border:none;cursor:pointer;";
-                btn.onclick = () => removeImage(i);
-
-                div.appendChild(img);
-                div.appendChild(btn);
-                preview.appendChild(div);
-            });
-        }
-
-        // ==========================
-        // 3) เลือกไฟล์เกม (.zip)
-        // ==========================
-        document.getElementById('file_game').addEventListener('change', function () {
-            const file = this.files[0];
-            const fileNameDiv = document.getElementById('fileGameName');
-
-            if (file) {
-                if (file.name.endsWith('.zip')) {
-                    selectedGameFile = file;
-                    fileNameDiv.innerText = "Selected: " + file.name;
-                } else {
-                    alert("ไฟล์ต้องเป็น .zip เท่านั้น!");
-                    this.value = "";
-                    selectedGameFile = null;
-                    fileNameDiv.innerText = "";
-                }
+    // เลือกไฟล์เกม
+    document.getElementById('file_game').addEventListener('change', function () {
+        const file = this.files[0];
+        const fileNameDiv = document.getElementById('fileGameName');
+        if (file) {
+            if (file.name.endsWith('.zip')) {
+                selectedGameFile = file;
+                fileNameDiv.innerText = "Selected: " + file.name;
+            } else {
+                alert("ไฟล์ต้องเป็น .zip เท่านั้น!");
+                this.value = "";
+                selectedGameFile = null;
+                fileNameDiv.innerText = "";
             }
-        });
+        }
+    });
 
-        // ==========================
-        // 4) ส่งฟอร์มไป backend
-        // ==========================
-        document.getElementById("gameForm").addEventListener("submit", function (e) {
-            e.preventDefault();
+    // ส่งฟอร์ม
+    document.getElementById("gameForm").addEventListener("submit", function (e) {
+        e.preventDefault();
 
-            // เช็คว่ามีไฟล์เกมหรือยัง
-            if (!selectedGameFile) {
-                alert("กรุณาเลือกไฟล์เกม (.zip) ด้วย!");
-                return;
-            }
+        if (selectedFiles.length < 1) { alert("กรุณาอัปโหลดรูปภาพอย่างน้อย 1 รูป"); return; }
+        if (!selectedGameFile) { alert("กรุณาเลือกไฟล์เกม (.zip) ด้วย!"); return; }
 
-            const formData = new FormData(this);
+        const selectedTags = $('#tags').val();
+        if (!selectedTags || selectedTags.length === 0) { alert("กรุณาเลือก Tags อย่างน้อย 1 ตัว"); return; }
 
-            // แนบรูปภาพ
-            selectedFiles.forEach(file => formData.append("images", file));
+        const formData = new FormData(this);
 
-            // แนบไฟล์เกม
-            formData.append("file_game", selectedGameFile);
+        selectedFiles.forEach(file => formData.append("images", file));
+        formData.append("file_game", selectedGameFile);
+        selectedTags.forEach(tag => formData.append("tags[]", tag)); // ใช้ tags[] !!!
 
-            // ส่งไป backend
-            fetch("/game/create", {
-                method: "POST",
-                body: formData
+        fetch("/game/create", { method: "POST", body: formData })
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) { alert(data.error); return; }
+                alert("สร้างเกมสำเร็จ!");
+                window.location.href = "/game/view/" + data.game.Game_id;
             })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.error) {
-                        alert(data.error);
-                        return;
-                    }
-                    alert("สร้างเกมสำเร็จ!");
-                    window.location.href = "/game/view/" + data.game.Game_id;
-                })
-                .catch(err => console.error(err));
-        });
+            .catch(err => console.error(err));
+    });
     </script>
+
 </body>
 
 </html>

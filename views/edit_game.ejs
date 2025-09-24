@@ -4,25 +4,20 @@
 
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <!-- CSS ของ select2 สำหรับ multi-select -->
+    <!-- CSS ของ select2 -->
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 
     <title>Edit Game</title>
 </head>
-
 <body>
     <h2>Edit Game</h2>
 
-    <!-- ==========================
-         ฟอร์มแก้ไขเกม
-         ========================== -->
-    <form action="/game/edit/<%= game.Game_id %>" method="POST" enctype="multipart/form-data">
-        <h1>Edit Game: <%= game.Game_Title %></h1>
+    <form id="editGameForm" action="/game/edit/<%= game.Game_id %>" method="POST" enctype="multipart/form-data">
+        <h3>Edit Game: <%= game.Game_Title %></h3>
 
         <!-- ชื่อเกม -->
         <label for="Game_Title">Title:</label>
@@ -31,41 +26,48 @@
 
         <!-- คำอธิบายสั้น -->
         <label for="Description">Description:</label>
-        <textarea name="Description" id="Description"><%= game.Description %></textarea>
+        <textarea name="Description" id="Description" required><%= game.Description %></textarea>
         <br>
 
-        <!-- สถานะการพัฒนาเกม -->
+        <!-- สถานะเกม -->
         <label for="status_game">Status:</label>
-        <select name="status_game" id="status_game" required>
+        <select name="Status_Game" id="status_game" required>
             <option value="Alpha" <%= game.Status_Game==="Alpha" ? "selected" : "" %>>Alpha</option>
             <option value="Beta" <%= game.Status_Game==="Beta" ? "selected" : "" %>>Beta</option>
             <option value="Released" <%= game.Status_Game==="Released" ? "selected" : "" %>>Released</option>
         </select>
         <br>
 
-        <!-- รายละเอียดเพิ่มเติม -->
+        <!-- รายละเอียด -->
         <label for="Details">Details:</label>
-        <textarea name="Details" id="Details"><%= game.Details %></textarea>
+        <textarea name="Details" id="Details" required><%= game.Details %></textarea>
+        <br>
+
+        <!-- รูปเกม -->
+        <label for="images_game">Images:</label>
+        <input type="file" id="images_game" multiple>
+        <div id="preview" style="display:flex; flex-wrap:wrap; gap:10px; margin-block-start:10px;"></div>
+        <input type="hidden" name="oldImages[]" id="oldImagesInput">
+        <br>
+
+        <!-- ไฟล์เกม -->
+        <label for="file_game">Game File (.zip):</label>
+        <input type="file" id="file_game" accept=".zip">
+        <div id="fileGameName" style="color:green; margin-block-start:5px;">
+            Current: <%= game.File_Game %>
+        </div>
         <br>
 
         <!-- Tags -->
         <label for="tags">Tags:</label>
         <select id="tags" name="tags[]" multiple="multiple">
-            <option value="Action" <%= game.tags?.Action ? "selected" : "" %>>Action</option>
-            <option value="Adventure" <%= game.tags?.Adventure ? "selected" : "" %>>Adventure</option>
-            <option value="Card_Game" <%= game.tags?.Card_Game ? "selected" : "" %>>Card Game</option>
-            <option value="Educational" <%= game.tags?.Educational ? "selected" : "" %>>Educational</option>
-            <option value="Fighting" <%= game.tags?.Fighting ? "selected" : "" %>>Fighting</option>
-            <option value="Interactive_Fiction" <%= game.tags?.Interactive_Fiction ? "selected" : "" %>>
-                Interactive Fiction
-            </option>
-            <option value="Puzzle" <%= game.tags?.Puzzle ? "selected" : "" %>>Puzzle</option>
-            <option value="Racing" <%= game.tags?.Racing ? "selected" : "" %>>Racing</option>
-            <option value="Other" <%= game.tags?.Other ? "selected" : "" %>>Other</option>
+            <% const tagList = ["Action","Adventure","Card_Game","Educational","Fighting","Interactive_Fiction","Puzzle","Racing","Other"]; %>
+            <% tagList.forEach(tag => { %>
+                <option value="<%= tag %>" <%= game.tags?.includes(tag) ? "selected" : "" %>><%= tag.replace("_"," ") %></option>
+            <% }) %>
         </select>
         <br>
 
-        <!-- ปุ่มอัปเดต -->
         <button type="submit">Update</button>
     </form>
 
@@ -76,17 +78,125 @@
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
     <script>
-        // ==========================
-        // 1) Initial select2 (multi-select)
-        // ==========================
         $(document).ready(function () {
             $('#tags').select2({
                 placeholder: "เลือก Tags",
                 allowClear: true,
                 tags: true
             });
+
+            // ==========================
+            // รูปเกม (preview + remove)
+            // ==========================
+            let selectedFiles = [];
+            let oldImages = <%- JSON.stringify(game.images) %>; // array ของ path รูปเก่า
+            const oldImagesInput = document.getElementById("oldImagesInput");
+
+            function renderPreview() {
+                const preview = document.getElementById('preview');
+                preview.innerHTML = "";
+
+                // รูปเก่า
+                oldImages.forEach((imgPath, i) => {
+                    const div = document.createElement('div');
+                    div.style.position = "relative";
+                    const img = document.createElement('img');
+                    img.src = imgPath;
+                    img.width = 150;
+
+                    const btn = document.createElement('button');
+                    btn.innerText = "✖";
+                    btn.style = "position:absolute; inset-block-start:0; inset-inline-end:0; background:red; color:white; border:none; cursor:pointer;";
+                    btn.onclick = () => {
+                        oldImages.splice(i,1);
+                        renderPreview();
+                    }
+
+                    div.appendChild(img);
+                    div.appendChild(btn);
+                    preview.appendChild(div);
+                });
+
+                // รูปใหม่
+                selectedFiles.forEach((file,i) => {
+                    const div = document.createElement('div');
+                    div.style.position = "relative";
+                    const img = document.createElement('img');
+                    img.src = URL.createObjectURL(file);
+                    img.width = 150;
+
+                    const btn = document.createElement('button');
+                    btn.innerText = "✖";
+                    btn.style = "position:absolute; inset-block-start:0; inset-inline-end:0; background:red; color:white; border:none; cursor:pointer;";
+                    btn.onclick = () => {
+                        selectedFiles.splice(i,1);
+                        renderPreview();
+                    }
+
+                    div.appendChild(img);
+                    div.appendChild(btn);
+                    preview.appendChild(div);
+                });
+
+                oldImagesInput.value = oldImages; // update hidden input
+            }
+
+            document.getElementById('images_game').addEventListener('change', function () {
+                for (let file of this.files) selectedFiles.push(file);
+                renderPreview();
+                this.value = "";
+            });
+
+            renderPreview();
+
+            // ==========================
+            // ไฟล์เกม
+            // ==========================
+            let selectedGameFile = null;
+            document.getElementById('file_game').addEventListener('change', function () {
+                const file = this.files[0];
+                const fileNameDiv = document.getElementById('fileGameName');
+                if(file){
+                    if(file.name.endsWith(".zip")){
+                        selectedGameFile = file;
+                        fileNameDiv.innerText = "Selected: " + file.name;
+                    } else {
+                        alert("ไฟล์ต้องเป็น .zip เท่านั้น!");
+                        this.value = "";
+                        selectedGameFile = null;
+                    }
+                }
+            });
+
+            // ==========================
+            // Submit form (AJAX)
+            // ==========================
+            document.getElementById("editGameForm").addEventListener("submit", function(e){
+                e.preventDefault();
+
+                if(oldImages.length + selectedFiles.length < 1){
+                    alert("ต้องมีรูปเกมอย่างน้อย 1 รูป");
+                    return;
+                }
+
+                const formData = new FormData(this);
+
+                // เพิ่มรูปใหม่
+                selectedFiles.forEach(file => formData.append("images", file));
+
+                // เพิ่มไฟล์เกมใหม่
+                if(selectedGameFile) formData.append("file_game", selectedGameFile);
+
+                fetch(this.action, { method: "POST", body: formData })
+                    .then(res => res.json())
+                    .then(data => {
+                        if(data.error){ alert(data.error); return; }
+                        alert("แก้ไขเกมสำเร็จ!");
+                        window.location.href = "/game/view/" + data.game.Game_id;
+                    })
+                    .catch(err => console.error(err));
+            });
         });
     </script>
 </body>
-
 </html>

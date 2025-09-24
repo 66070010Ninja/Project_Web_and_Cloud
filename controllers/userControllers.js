@@ -4,6 +4,8 @@
 
 const userModels = require('../models/userModels');
 const bcrypt = require('bcrypt');
+const path = require('path');
+const fs = require('fs'); // ถ้ายังไม่ได้ import fs ด้วย
 
 const userController = {
 
@@ -139,11 +141,15 @@ const userController = {
             const hashedPassword = await bcrypt.hash(password, 10);
 
             // สร้าง user ใหม่
-            await userModels.create({
+            const newUser = await userModels.create({
                 username,
                 email,
                 password: hashedPassword
             });
+
+            // สร้าง default profile image
+            const defaultImagePath = '/user/img/user_default.jpg';
+            await userModels.addProfileImage(newUser.User_id, defaultImagePath);
 
             res.redirect('/user/login');
         } catch (error) {
@@ -157,21 +163,32 @@ const userController = {
     // ==========================
     postEditProfile: async (req, res) => {
         try {
-            const userId = parseInt(req.params.id, 10);
-            if (isNaN(userId)) return res.status(400).send("Invalid user ID");
+            const userId = req.session.user?.id;
+            if (!userId) return res.status(401).send("Unauthorized");
 
-            console.log(userId);
-            console.log(req.body);
+            const { User_Name } = req.body;
 
-            const { User_Name, Email, Profile_Image } = req.body;
+            await userModels.updateUser(userId, { User_Name });
 
-            // อัปเดตข้อมูลใน DB
-            await userModels.updateUser(userId, { User_Name, Email, Profile_Image });
+            if (req.files && req.files.Profile_Image) {
+                const file = req.files.Profile_Image;
+                const uploadDir = path.join(__dirname, '..', 'public', 'user', 'img');
+                if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 
-            res.send(`The Id ${userId}, edit success!`);
-        } catch (error) {
-            console.error("Register error:", error);
-            res.status(500).json({ err: error.message });
+                const filename = `${Date.now()}_${file.name}`;
+                const destPath = path.join(uploadDir, filename);
+
+                await file.mv(destPath);
+
+                const profileImagePath = `/user/img/${filename}`;
+                await userModels.addProfileImage(userId, profileImagePath);
+            }
+
+            res.redirect('/user/view/' + userId);
+
+        } catch (err) {
+            console.error(err);
+            res.status(500).send("Error updating profile");
         }
     },
 
@@ -184,9 +201,25 @@ const userController = {
                 console.error("Logout error:", err);
                 return res.status(500).json({ err: 'Logout failed' });
             }
-            res.redirect('/user/login');
+            res.redirect('/');
         });
+    },
+
+    getProfile: async (req, res) => {
+        try {
+            const userId = req.session.user.id; // หรือจาก session
+            const user = await prisma.account.findUnique({
+                where: { User_id: userId },
+                include: { Profile_Image: true } // เอารูปทั้งหมดของ user
+            });
+
+            res.render('view_profile', { user });
+        } catch (err) {
+            console.error(err);
+            res.status(500).send("Server Error");
+        }
     }
+
 
 };
 

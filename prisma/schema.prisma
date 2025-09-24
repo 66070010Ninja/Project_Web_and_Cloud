@@ -30,11 +30,11 @@ model account {
   Email           String
   Hashed_Password String
   Roles           String @default("Member")            // Default: Member
-  Profile_Image   String @default("Profile.png")       // Default profile image
 
   // ความสัมพันธ์
   games  games[]
   review review[]
+  Profile_Image user_image[]
 }
 
 // ==========================
@@ -57,7 +57,7 @@ model games {
 
   // ความสัมพันธ์
   account account      @relation(fields: [User_id], references: [User_id])
-  images  game_image[]
+  Game_Images  game_image[]
   review  review[]
   tags    tags?
 }
@@ -72,6 +72,14 @@ model game_image {
 
   // ความสัมพันธ์
   games games @relation(fields: [Game_id], references: [Game_id])
+}
+
+model user_image {
+  User_Image_id Int   @id @default(autoincrement()) // Primary Key
+  Path          String
+  User_id       Int
+
+  account account @relation(fields: [User_id], references: [User_id])
 }
 
 // ==========================

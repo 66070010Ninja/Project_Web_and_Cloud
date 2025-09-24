@@ -44,7 +44,8 @@ const userModels = {
         return await prisma.account.findUnique({
             where: {
                 User_id: user_id
-            }
+            },
+            include: { Profile_Image: true }
         });
     },
 
@@ -57,6 +58,16 @@ const userModels = {
                 User_id: id
             },
             data: data
+        });
+    },
+
+    // เพิ่ม default profile image
+    addProfileImage: async (userId, path) => {
+        return await prisma.user_image.create({
+            data: {
+                Path: path,
+                User_id: userId
+            }
         });
     },
 };

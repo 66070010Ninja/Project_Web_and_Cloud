@@ -29,12 +29,27 @@
             <!-- Profile Image -->
             <div class="form-group">
                 <label>Current Profile Image:</label><br>
-                <% if (user.Profile_Image) { %>
-                    <img src="/uploads/<%= user.Profile_Image %>" alt="Profile" width="100"><br>
-                    <% } else { %>
-                        <p>No profile image uploaded.</p>
-                        <% } %>
+                <% if (user.Profile_Image && user.Profile_Image.length> 0) { %>
+                    <% let lastImage=user.Profile_Image[user.Profile_Image.length - 1]; %>
+                        <img src="<%= lastImage.Path %>" alt="Profile" width="100">
+                        <% } else { %>
+                            <p>No profile image uploaded.</p>
+                            <% } %>
+
             </div>
+
+            <!-- ฟอร์ม logout แบบ POST -->
+            <form action="/user/logout" method="POST" style="display:inline;">
+                <button type="submit" class="btn">Log Out</button>
+            </form>
+
+            <a href="/" class="btn">Home</a>
+
+            <!-- ฟอร์ม logout แบบ POST -->
+            <form action="/user/edit" method="GET" style="display:inline;">
+                <button type="submit" class="btn">Edit Proflie</button>
+            </form>
+
         </form>
     </div>
 </body>

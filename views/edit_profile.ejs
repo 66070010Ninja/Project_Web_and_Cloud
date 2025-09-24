@@ -31,24 +31,28 @@
             <!-- Email -->
             <div class="form-group">
                 <label for="Email">Email:</label>
-                <input type="email" id="Email" name="Email" value="<%= user.Email %>" required>
+                <input type="email" id="Email" name="Email" value="<%= user.Email %>" readonly>
             </div>
 
             <!-- Profile Image -->
             <div class="form-group">
                 <label>Current Profile Image:</label><br>
-                <% if (user.Profile_Image) { %>
-                    <img src="/uploads/<%= user.Profile_Image %>" alt="Profile" width="100"><br>
+                <% if (user.Profile_Image && user.Profile_Image.length > 0) { %>
+                    <img src="<%= user.Profile_Image[0].Path %>" alt="Profile" width="100"><br>
                 <% } else { %>
                     <p>No profile image uploaded.</p>
                 <% } %>
-
-                <label for="Profile_Image">Upload New Image:</label>
+                <label for="Profile_Image">Choose new profile image:</label>
                 <input type="file" id="Profile_Image" name="Profile_Image" accept="image/*">
             </div>
 
             <!-- ปุ่มอัปเดตโปรไฟล์ -->
             <button type="submit">Update Profile</button>
+        </form>
+
+        <!-- ฟอร์ม cancel กลับหน้า view -->
+        <form action="/user/view/<%= user.User_id %>" method="GET" style="display:inline;">
+            <button type="submit" class="btn">Cancel</button>
         </form>
     </div>
 </body>
