@@ -1,9 +1,15 @@
+<!-- ==========================
+     edit_profile.ejs
+     ========================== -->
+
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <title>Edit Profile</title>
+
+    <!-- CSS -->
     <link rel="stylesheet" href="/css/style.css">
 </head>
 
@@ -11,10 +17,12 @@
     <div class="container">
         <h2>Edit Profile</h2>
 
-        <!-- ฟอร์มแก้ไขโปรไฟล์ -->
-        <form action="/user/edit/<%= user.User_id %>" method="POST">
+        <!-- ==========================
+             ฟอร์มแก้ไขโปรไฟล์
+             ========================== -->
+        <form action="/user/edit/<%= user.User_id %>" method="POST" enctype="multipart/form-data">
 
-            <!-- User Name -->
+            <!-- Username -->
             <div class="form-group">
                 <label for="User_Name">Username:</label>
                 <input type="text" id="User_Name" name="User_Name" value="<%= user.User_Name %>" required>
@@ -31,14 +39,15 @@
                 <label>Current Profile Image:</label><br>
                 <% if (user.Profile_Image) { %>
                     <img src="/uploads/<%= user.Profile_Image %>" alt="Profile" width="100"><br>
-                    <% } else { %>
-                        <p>No profile image uploaded.</p>
-                        <% } %>
-                            <label for="Profile_Image">Upload New Image:</label>
-                            <input type="file" id="Profile_Image" name="Profile_Image" accept="image/*">
+                <% } else { %>
+                    <p>No profile image uploaded.</p>
+                <% } %>
+
+                <label for="Profile_Image">Upload New Image:</label>
+                <input type="file" id="Profile_Image" name="Profile_Image" accept="image/*">
             </div>
 
-            <!-- Submit -->
+            <!-- ปุ่มอัปเดตโปรไฟล์ -->
             <button type="submit">Update Profile</button>
         </form>
     </div>

@@ -1,6 +1,7 @@
 <!-- ==========================
-     views/edit_game.ejs
+     edit_game.ejs
      ========================== -->
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -8,10 +9,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <!-- ==========================
-         CSS Libraries
-         ========================== -->
-    <!-- Select2 CSS สำหรับ multi-select -->
+    <!-- CSS ของ select2 สำหรับ multi-select -->
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 
     <title>Edit Game</title>
@@ -21,9 +19,9 @@
     <h2>Edit Game</h2>
 
     <!-- ==========================
-         Form สำหรับแก้ไขเกม
+         ฟอร์มแก้ไขเกม
          ========================== -->
-    <form action="/game/edit/<%= game.Game_id %>" method="POST">
+    <form action="/game/edit/<%= game.Game_id %>" method="POST" enctype="multipart/form-data">
         <h1>Edit Game: <%= game.Game_Title %></h1>
 
         <!-- ชื่อเกม -->
@@ -31,12 +29,12 @@
         <input type="text" name="Game_Title" id="Game_Title" value="<%= game.Game_Title %>" required>
         <br>
 
-        <!-- คำอธิบายเกม -->
+        <!-- คำอธิบายสั้น -->
         <label for="Description">Description:</label>
         <textarea name="Description" id="Description"><%= game.Description %></textarea>
         <br>
 
-        <!-- สถานะเกม -->
+        <!-- สถานะการพัฒนาเกม -->
         <label for="status_game">Status:</label>
         <select name="status_game" id="status_game" required>
             <option value="Alpha" <%= game.Status_Game==="Alpha" ? "selected" : "" %>>Alpha</option>
@@ -50,7 +48,7 @@
         <textarea name="Details" id="Details"><%= game.Details %></textarea>
         <br>
 
-        <!-- เลือก Tags ของเกม (multi-select) -->
+        <!-- Tags -->
         <label for="tags">Tags:</label>
         <select id="tags" name="tags[]" multiple="multiple">
             <option value="Action" <%= game.tags?.Action ? "selected" : "" %>>Action</option>
@@ -59,33 +57,33 @@
             <option value="Educational" <%= game.tags?.Educational ? "selected" : "" %>>Educational</option>
             <option value="Fighting" <%= game.tags?.Fighting ? "selected" : "" %>>Fighting</option>
             <option value="Interactive_Fiction" <%= game.tags?.Interactive_Fiction ? "selected" : "" %>>
-                Interactive Fiction</option>
+                Interactive Fiction
+            </option>
             <option value="Puzzle" <%= game.tags?.Puzzle ? "selected" : "" %>>Puzzle</option>
             <option value="Racing" <%= game.tags?.Racing ? "selected" : "" %>>Racing</option>
             <option value="Other" <%= game.tags?.Other ? "selected" : "" %>>Other</option>
         </select>
         <br>
 
-        <!-- ปุ่มส่งฟอร์ม -->
+        <!-- ปุ่มอัปเดต -->
         <button type="submit">Update</button>
     </form>
 
     <!-- ==========================
-         JavaScript Libraries
+         Scripts
          ========================== -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
-    <!-- ==========================
-         Script สำหรับ Initializing Select2
-         ========================== -->
     <script>
+        // ==========================
+        // 1) Initial select2 (multi-select)
+        // ==========================
         $(document).ready(function () {
-            // ใช้งาน Select2 สำหรับ multi-select tags
             $('#tags').select2({
-                placeholder: "เลือก Tags",  // ข้อความ placeholder
-                allowClear: true,           // สามารถลบค่าที่เลือกได้
-                tags: true                  // เพิ่ม tag ใหม่ได้เอง
+                placeholder: "เลือก Tags",
+                allowClear: true,
+                tags: true
             });
         });
     </script>
