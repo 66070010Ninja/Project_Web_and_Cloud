@@ -1,19 +1,21 @@
 // ==========================
-// models/gameModels.js
+// gameModels.js
 // ==========================
 
-// นำเข้า Prisma Client
+// --------------------------
+// Import Prisma Client
+// --------------------------
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
-// ==========================
-// โมดูลสำหรับจัดการข้อมูลเกม
-// ==========================
+// --------------------------
+// Game Models
+// --------------------------
 const gameModels = {
 
-    // ==========================
+    // ----------------------
     // สร้างเกมใหม่
-    // ==========================
+    // ----------------------
     createGame: async (data) => prisma.games.create({
         data: {
             User_id: data.user_id,
@@ -21,17 +23,17 @@ const gameModels = {
             Description: data.description,
             Status_Game: data.status_game,
             Details: data.details,
-            File_Game: data.File_Game || "default.zip"
+            File_Game: data.File_Game || "default.zip" // ถ้าไม่มีไฟล์ ใช้ default.zip
         }
     }),
 
-    // ==========================
-    // สร้าง tags สำหรับเกม
-    // ==========================
+    // ----------------------
+    // สร้าง Tags ของเกม
+    // ----------------------
     createTags: async (gameId, tags = []) => {
         return await prisma.tags.create({
             data: {
-                Game_id: gameId,                             // ID เกมที่เกี่ยวข้อง
+                Game_id: gameId,
                 Action: tags.includes("Action") ? 1 : 0,
                 Adventure: tags.includes("Adventure") ? 1 : 0,
                 Card_Game: tags.includes("Card_Game") ? 1 : 0,
@@ -45,29 +47,31 @@ const gameModels = {
         });
     },
 
+    // ----------------------
+    // บันทึกรูปภาพของเกม
+    // ----------------------
     createImage: async (data) => {
         return await prisma.game_image.create({
             data: {
-                Path: `/game/img/${data.url}`, // path ของไฟล์
-                Game_id: data.game_id          // ID ของเกมที่ relation
+                Path: `/game/img/${data.url}`, // เก็บ Path ของรูป
+                Game_id: data.game_id
             }
         });
     },
 
-
-    // ==========================
+    // ----------------------
     // ค้นหาเกมด้วย ID
-    // ==========================
+    // ----------------------
     findGameById: async (id) => {
         return await prisma.games.findUnique({
             where: { Game_id: id },
-            include: { tags: true } // ดึงข้อมูล tags ของเกมด้วย
+            include: { tags: true } // รวมข้อมูล Tags มาด้วย
         });
     },
 
-    // ==========================
+    // ----------------------
     // อัปเดตข้อมูลเกม
-    // ==========================
+    // ----------------------
     updateGame: async (id, data) => {
         return await prisma.games.update({
             where: { Game_id: id },
@@ -75,9 +79,9 @@ const gameModels = {
         });
     },
 
-    // ==========================
-    // อัปเดต tags ของเกม
-    // ==========================
+    // ----------------------
+    // อัปเดต Tags ของเกม
+    // ----------------------
     updateTags: async (gameId, tagsData) => {
         return await prisma.tags.update({
             where: { Game_id: gameId },
@@ -85,33 +89,33 @@ const gameModels = {
         });
     },
 
-    // ==========================
-    // สร้าง Review ใหม่
-    // ==========================
+    // ----------------------
+    // เพิ่มรีวิวใหม่
+    // ----------------------
     createReview: async (data) => {
         return await prisma.review.create({
             data: {
-                Game_id: data.game_id,  // ID เกมที่รีวิว
-                User_id: data.user_id,  // ID ผู้ใช้ที่รีวิว
-                Comment: data.comment   // ข้อความรีวิว
+                Game_id: data.game_id,
+                User_id: data.user_id,
+                Comment: data.comment
             }
         });
     },
 
-    // ==========================
-    // ดึง Review ทั้งหมดของเกม
-    // ==========================
+    // ----------------------
+    // ดึงรีวิวทั้งหมดของเกม
+    // ----------------------
     findReviewsByGameId: async (gameId) => {
         return await prisma.review.findMany({
             where: { Game_id: gameId },
-            include: { account: true },         // ดึงข้อมูลผู้ใช้ด้วย
-            orderBy: { Created_At: 'desc' }     // เรียงจากล่าสุดไปเก่าสุด
+            include: { account: true },           // รวมข้อมูลผู้ใช้ที่รีวิว
+            orderBy: { Created_At: 'desc' }       // เรียงตามเวลาล่าสุดก่อน
         });
     },
 
 };
 
-// ==========================
-// ส่งออกโมดูล
-// ==========================
+// --------------------------
+// Export Game Models
+// --------------------------
 module.exports = gameModels;

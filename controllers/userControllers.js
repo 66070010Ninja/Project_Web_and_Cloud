@@ -1,81 +1,68 @@
-// controllers/userControllers.js
+// ==========================
+// userController.js
+// ==========================
 
-// ==========================
-// นำเข้าโมดูลที่จำเป็น
-// ==========================
-const userModels = require('../models/userModels'); // โมเดลสำหรับจัดการข้อมูลผู้ใช้
-const bcrypt = require('bcrypt'); // สำหรับเข้ารหัสและตรวจสอบรหัสผ่าน
+const userModels = require('../models/userModels');
+const bcrypt = require('bcrypt');
 
-// ==========================
-// Controller object รวมฟังก์ชันสำหรับจัดการผู้ใช้
-// ==========================
 const userController = {
 
     // ==========================
-    // ======== PAGE VIEWS =======
+    // แสดงหน้า Login
     // ==========================
-
-    /**
-     * แสดงหน้า Login
-     */
     getLoginPage: (req, res) => {
         res.render('login', { error: null, formData: {} });
     },
 
-    /**
-     * แสดงหน้า Register
-     */
+    // ==========================
+    // แสดงหน้า Register
+    // ==========================
     getRegisterPage: (req, res) => {
         res.render('register', { error: null, formData: {} });
     },
 
+    // ==========================
+    // ดูข้อมูลผู้ใช้ (ตาม userId)
+    // ==========================
     getViewPage: async (req, res) => {
         try {
             const userId = parseInt(req.params.id, 10);
             const user = await userModels.findByUserID(userId);
 
-            if (!user) {
-                return res.status(404).send("User not found");
-            }
+            if (!user) return res.status(404).send("User not found");
 
             res.render('view_user', { user });
-        }
-        catch (error) {
+        } catch (error) {
             console.log("Error fetching user:", error);
             res.status(500).send("Internal Server Error");
         }
     },
 
+    // ==========================
+    // แสดงหน้าแก้ไขโปรไฟล์ (ใช้ user จาก session)
+    // ==========================
     getEditProfilePage: async (req, res) => {
         try {
-            const userId = req.session.user?.id;
+            const userId = req.session.user?.id; // ดึง id จาก session
 
             const user = await userModels.findByUserID(userId);
-
-            if (!user) {
-                return res.status(404).send("User not found");
-            }
+            if (!user) return res.status(404).send("User not found");
 
             res.render('edit_profile', { user });
-        }
-        catch (error) {
+        } catch (error) {
             console.error(error);
             res.status(500).send("Error loading profile");
         }
     },
 
     // ==========================
-    // ======== AUTH ACTIONS =====
+    // Login
     // ==========================
-
-    /**
-     * ฟังก์ชัน Login
-     */
     postLogin: async (req, res) => {
         try {
             const { username, password } = req.body;
 
-            // ตรวจสอบว่ากรอกครบหรือไม่
+            // เช็คว่ากรอกครบหรือไม่
             if (!username || !password) {
                 return res.render('login', {
                     error: 'Please fill in all fields',
@@ -83,7 +70,7 @@ const userController = {
                 });
             }
 
-            // ค้นหาผู้ใช้จากฐานข้อมูล
+            // หาผู้ใช้จาก DB
             const user = await userModels.findByUsername(username);
             if (!user) {
                 return res.render('login', {
@@ -101,7 +88,7 @@ const userController = {
                 });
             }
 
-            // เก็บข้อมูลลง session
+            // บันทึก session
             req.session.user = {
                 id: user.User_id,
                 username: user.User_Name,
@@ -109,22 +96,21 @@ const userController = {
                 role: user.Roles
             };
 
-            // หลัง login สำเร็จ redirect ไปหน้า dashboard หรือหน้า home
-            res.redirect('/');
+            res.redirect('/'); // ไปหน้าแรก
         } catch (error) {
             console.error("Login error:", error);
             res.status(500).json({ err: error.message });
         }
     },
 
-    /**
-     * ฟังก์ชัน Register
-     */
+    // ==========================
+    // Register
+    // ==========================
     postRegister: async (req, res) => {
         try {
             const { username, email, password, confirm_password } = req.body;
 
-            // ตรวจสอบว่ากรอกครบหรือไม่
+            // ตรวจสอบกรอกครบหรือไม่
             if (!username || !email || !password || !confirm_password) {
                 return res.render('register', {
                     error: 'Please fill in all fields',
@@ -132,7 +118,7 @@ const userController = {
                 });
             }
 
-            // ตรวจสอบรหัสผ่านตรงกันหรือไม่
+            // ตรวจสอบรหัสผ่านซ้ำกันไหม
             if (password !== confirm_password) {
                 return res.render('register', {
                     error: 'Passwords do not match !!!',
@@ -140,7 +126,7 @@ const userController = {
                 });
             }
 
-            // ตรวจสอบว่ามี username นี้แล้วหรือไม่
+            // ตรวจสอบ username ซ้ำ
             const existingUser = await userModels.findByUsername(username);
             if (existingUser) {
                 return res.render('register', {
@@ -149,17 +135,16 @@ const userController = {
                 });
             }
 
-            // เข้ารหัสรหัสผ่าน
+            // Hash รหัสผ่าน
             const hashedPassword = await bcrypt.hash(password, 10);
 
-            // บันทึกผู้ใช้ใหม่
+            // สร้าง user ใหม่
             await userModels.create({
                 username,
                 email,
                 password: hashedPassword
             });
 
-            // เสร็จแล้ว redirect ไปหน้า login
             res.redirect('/user/login');
         } catch (error) {
             console.error("Register error:", error);
@@ -167,10 +152,12 @@ const userController = {
         }
     },
 
+    // ==========================
+    // อัปเดตโปรไฟล์
+    // ==========================
     postEditProfile: async (req, res) => {
         try {
             const userId = parseInt(req.params.id, 10);
-
             if (isNaN(userId)) return res.status(400).send("Invalid user ID");
 
             console.log(userId);
@@ -178,19 +165,19 @@ const userController = {
 
             const { User_Name, Email, Profile_Image } = req.body;
 
+            // อัปเดตข้อมูลใน DB
             await userModels.updateUser(userId, { User_Name, Email, Profile_Image });
 
             res.send(`The Id ${userId}, edit success!`);
-        }
-        catch (error) {
+        } catch (error) {
             console.error("Register error:", error);
             res.status(500).json({ err: error.message });
         }
     },
 
-    /**
-     * ฟังก์ชัน Logout
-     */
+    // ==========================
+    // Logout
+    // ==========================
     postLogout: (req, res) => {
         req.session.destroy((err) => {
             if (err) {
@@ -203,7 +190,7 @@ const userController = {
 
 };
 
-// ==========================
-// ส่งออก controller
-// ==========================
+// --------------------------
+// Export User Controller
+// --------------------------
 module.exports = userController;

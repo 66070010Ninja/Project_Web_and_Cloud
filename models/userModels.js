@@ -1,37 +1,35 @@
 // ==========================
-// models/userModels.js
+// userModels.js
 // ==========================
 
-// นำเข้า PrismaClient จาก @prisma/client
+// --------------------------
+// Import Prisma Client
+// --------------------------
 const { PrismaClient } = require('@prisma/client');
-
-// สร้าง instance ของ PrismaClient เพื่อใช้เชื่อมต่อฐานข้อมูล
 const prisma = new PrismaClient();
 
-// ==========================
-// โมเดลสำหรับจัดการข้อมูลผู้ใช้
-// ==========================
+// --------------------------
+// User Models
+// --------------------------
 const userModels = {
 
-    // ==========================
-    // ฟังก์ชันสร้างผู้ใช้ใหม่
-    // ==========================
+    // ----------------------
+    // สร้างผู้ใช้ใหม่ (Register)
+    // ----------------------
     create: async (data) => {
-        // ใช้ Prisma สร้างแถวใหม่ในตาราง account
         return await prisma.account.create({
             data: {
-                User_Name: data.username,       // กำหนดชื่อผู้ใช้
-                Email: data.email,              // กำหนดอีเมล
-                Hashed_Password: data.password  // กำหนดรหัสผ่านที่เข้ารหัสแล้ว
+                User_Name: data.username,
+                Email: data.email,
+                Hashed_Password: data.password
             }
         });
     },
 
-    // ==========================
-    // ฟังก์ชันค้นหาผู้ใช้ตาม username
-    // ==========================
+    // ----------------------
+    // ค้นหาผู้ใช้ด้วย Username (ใช้ตอน Login)
+    // ----------------------
     findByUsername: async (username) => {
-        // ใช้ Prisma ค้นหาผู้ใช้จากคอลัมน์ User_Name
         return await prisma.account.findUnique({
             where: {
                 User_Name: username
@@ -39,6 +37,9 @@ const userModels = {
         });
     },
 
+    // ----------------------
+    // ค้นหาผู้ใช้ด้วย User ID
+    // ----------------------
     findByUserID: async (user_id) => {
         return await prisma.account.findUnique({
             where: {
@@ -47,6 +48,9 @@ const userModels = {
         });
     },
 
+    // ----------------------
+    // อัปเดตข้อมูลผู้ใช้ (Edit Profile)
+    // ----------------------
     updateUser: async (id, data) => {
         return await prisma.account.update({
             where: {
@@ -57,7 +61,7 @@ const userModels = {
     },
 };
 
-// ==========================
-// ส่งออกโมเดลเพื่อใช้ใน controller หรือที่อื่น ๆ
-// ==========================
+// --------------------------
+// Export User Models
+// --------------------------
 module.exports = userModels;

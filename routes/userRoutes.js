@@ -1,41 +1,44 @@
 // ==========================
-// routes/userRoutes.js
+// userRoutes.js
 // ==========================
 
-// นำเข้า Express
+// --------------------------
+// Import Dependencies
+// --------------------------
 const express = require('express');
 const router = express.Router();
 
-// นำเข้า controller สำหรับจัดการผู้ใช้
+// --------------------------
+// Import Controller
+// --------------------------
 const userController = require('../controllers/userControllers');
 
-// ==========================
-// Routes สำหรับ Register
-// ==========================
+// --------------------------
+// User Routes
+// --------------------------
 
-// แสดงหน้า register
+// Register Page (GET)
 router.get('/register', userController.getRegisterPage);
 
-// ประมวลผลการส่งฟอร์ม register
+// Register User (POST)
 router.post('/register', userController.postRegister);
 
-// ==========================
-// Routes สำหรับ Login
-// ==========================
-
-// แสดงหน้า login
+// Login Page (GET)
 router.get('/login', userController.getLoginPage);
 
-// ประมวลผลการส่งฟอร์ม login
+// Login User (POST)
 router.post('/login', userController.postLogin);
 
+// View User Profile by ID (GET)
 router.get('/view/:id', userController.getViewPage);
 
+// Edit Profile Page (GET)
 router.get('/edit', userController.getEditProfilePage);
 
+// Edit Profile (POST)
 router.post('/edit/:id', userController.postEditProfile);
 
-// ==========================
-// ส่งออก router
-// ==========================
+// --------------------------
+// Export Router
+// --------------------------
 module.exports = router;

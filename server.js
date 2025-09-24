@@ -2,58 +2,65 @@
 // server.js
 // ==========================
 
-// นำเข้าโมดูลที่จำเป็น
-const express = require('express');             // สำหรับสร้างเว็บเซิร์ฟเวอร์
-const path = require('path');                   // สำหรับจัดการ path ของไฟล์และโฟลเดอร์
-const session = require('express-session');     // สำหรับจัดการ session
-const fileUpload = require('express-fileupload'); // สำหรับอัปโหลดไฟล์
+// --------------------------
+// Import Dependencies
+// --------------------------
+const express = require('express');
+const path = require('path');
+const session = require('express-session');
+const fileUpload = require('express-fileupload');
 
-// สร้าง instance ของ Express application
+// --------------------------
+// App Initialization
+// --------------------------
 const app = express();
-const port = 3000; // กำหนดพอร์ตที่ server จะรัน
+const port = 3000;
 
-// ==========================
-// ตั้งค่า View Engine
-// ==========================
-app.set('view engine', 'ejs');
-app.set('views', path.join(__dirname, 'views'));
+// --------------------------
+// View Engine Setup (EJS)
+// --------------------------
+app.set('view engine', 'ejs'); // ใช้ EJS เป็น template engine
+app.set('views', path.join(__dirname, 'views')); // กำหนดโฟลเดอร์ views
 
-// ==========================
-// Middleware
-// ==========================
+// --------------------------
+// Middleware Setup
+// --------------------------
 
-// สำหรับ parse form data (application/x-www-form-urlencoded)
+// รองรับการส่งข้อมูลแบบ form-urlencoded
 app.use(express.urlencoded({ extended: true }));
 
-// สำหรับ parse JSON body
+// รองรับการส่งข้อมูล JSON
 app.use(express.json());
 
-// ตั้งค่า session
+// จัดการ Session สำหรับการ login/logout
 app.use(session({
-    secret: 'your-secret-key',
-    resave: false,
-    saveUninitialized: false,
-    cookie: { secure: false }
+    secret: 'your-secret-key', // คีย์ลับสำหรับเข้ารหัส session
+    resave: false,             // ไม่บันทึก session ซ้ำถ้าไม่มีการเปลี่ยนแปลง
+    saveUninitialized: false,  // ไม่สร้าง session เปล่า
+    cookie: { secure: false }  // true ถ้าใช้ HTTPS
 }));
 
-// ใช้งาน express-fileupload
+// อัปโหลดไฟล์ (ใช้ req.files)
 app.use(fileUpload());
 
-// ตั้งค่า public folder สำหรับไฟล์ static (รูป/zip)
+// กำหนดให้เข้าถึงไฟล์ static ได้จาก /public (เช่น CSS, JS, รูปภาพ)
 app.use('/public', express.static(path.join(__dirname, 'public')));
 
-// ==========================
+// --------------------------
 // Routes
-// ==========================
+// --------------------------
 const userRoute = require('./routes/userRoutes');
-const gameRoute = require('./routes/gameRoutes'); // ต้องตรงกับไฟล์จริง
+const gameRoute = require('./routes/gameRoutes');
 
+// เส้นทางที่เกี่ยวข้องกับผู้ใช้
 app.use('/user', userRoute);
+
+// เส้นทางที่เกี่ยวข้องกับเกม
 app.use('/game', gameRoute);
 
-// ==========================
-// เริ่ม server
-// ==========================
+// --------------------------
+// Start Server
+// --------------------------
 app.listen(port, () => {
-    console.log(`Server is running at http://localhost:${port}`);
+    console.log(`✅ Server is running at: http://localhost:${port}`);
 });
