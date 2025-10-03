@@ -2,30 +2,36 @@
 // userController.js
 // ==========================
 
+// --------------------------
+// Import Dependencies
+// --------------------------
 const userModels = require('../models/userModels');
 const bcrypt = require('bcrypt');
 const path = require('path');
-const fs = require('fs'); // ถ้ายังไม่ได้ import fs ด้วย
+const fs = require('fs');
 
+// --------------------------
+// User Controller
+// --------------------------
 const userController = {
 
-    // ==========================
+    // ----------------------
     // แสดงหน้า Login
-    // ==========================
+    // ----------------------
     getLoginPage: (req, res) => {
         res.render('login', { error: null, formData: {} });
     },
 
-    // ==========================
+    // ----------------------
     // แสดงหน้า Register
-    // ==========================
+    // ----------------------
     getRegisterPage: (req, res) => {
         res.render('register', { error: null, formData: {} });
     },
 
-    // ==========================
+    // ----------------------
     // ดูข้อมูลผู้ใช้ (ตาม userId)
-    // ==========================
+    // ----------------------
     getViewPage: async (req, res) => {
         try {
             const userId = parseInt(req.params.id, 10);
@@ -35,36 +41,36 @@ const userController = {
 
             res.render('view_user', { user });
         } catch (error) {
-            console.log("Error fetching user:", error);
+            console.error("Error fetching user:", error);
             res.status(500).send("Internal Server Error");
         }
     },
 
-    // ==========================
-    // แสดงหน้าแก้ไขโปรไฟล์ (ใช้ user จาก session)
-    // ==========================
+    // ----------------------
+    // แสดงหน้าแก้ไขโปรไฟล์ (ดึง user จาก session)
+    // ----------------------
     getEditProfilePage: async (req, res) => {
         try {
             const userId = req.session.user?.id; // ดึง id จาก session
-
             const user = await userModels.findByUserID(userId);
+
             if (!user) return res.status(404).send("User not found");
 
             res.render('edit_profile', { user });
         } catch (error) {
-            console.error(error);
-            res.status(500).send("Error loading profile");
+            console.error("Error loading profile:", error);
+            res.status(500).send("Internal Server Error");
         }
     },
 
-    // ==========================
+    // ----------------------
     // Login
-    // ==========================
+    // ----------------------
     postLogin: async (req, res) => {
         try {
             const { username, password } = req.body;
 
-            // เช็คว่ากรอกครบหรือไม่
+            // ตรวจสอบว่ากรอกครบหรือไม่
             if (!username || !password) {
                 return res.render('login', {
                     error: 'Please fill in all fields',
@@ -90,7 +96,7 @@ const userController = {
                 });
             }
 
-            // บันทึก session
+            // เก็บข้อมูลผู้ใช้ใน session
             req.session.user = {
                 id: user.User_id,
                 username: user.User_Name,
@@ -105,14 +111,14 @@ const userController = {
         }
     },
 
-    // ==========================
+    // ----------------------
     // Register
-    // ==========================
+    // ----------------------
     postRegister: async (req, res) => {
         try {
             const { username, email, password, confirm_password } = req.body;
 
-            // ตรวจสอบกรอกครบหรือไม่
+            // ตรวจสอบการกรอกข้อมูล
             if (!username || !email || !password || !confirm_password) {
                 return res.render('register', {
                     error: 'Please fill in all fields',
@@ -120,7 +126,7 @@ const userController = {
                 });
             }
 
-            // ตรวจสอบรหัสผ่านซ้ำกันไหม
+            // ตรวจสอบ password ตรงกันหรือไม่
             if (password !== confirm_password) {
                 return res.render('register', {
                     error: 'Passwords do not match !!!',
@@ -137,7 +143,7 @@ const userController = {
                 });
             }
 
-            // Hash รหัสผ่าน
+            // Hash password
             const hashedPassword = await bcrypt.hash(password, 10);
 
             // สร้าง user ใหม่
@@ -158,9 +164,9 @@ const userController = {
         }
     },
 
-    // ==========================
+    // ----------------------
     // อัปเดตโปรไฟล์
-    // ==========================
+    // ----------------------
     postEditProfile: async (req, res) => {
         try {
             const userId = req.session.user?.id;
@@ -168,16 +174,21 @@ const userController = {
 
             const { User_Name } = req.body;
 
+            // อัปเดตชื่อผู้ใช้
             await userModels.updateUser(userId, { User_Name });
 
+            // อัปโหลดรูปโปรไฟล์ใหม่ (ถ้ามี)
             if (req.files && req.files.Profile_Image) {
                 const file = req.files.Profile_Image;
                 const uploadDir = path.join(__dirname, '..', 'public', 'user', 'img');
+
+                // สร้างโฟลเดอร์ถ้ายังไม่มี
                 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 
                 const filename = `${Date.now()}_${file.name}`;
                 const destPath = path.join(uploadDir, filename);
 
+                // ย้ายไฟล์ไปโฟลเดอร์
                 await file.mv(destPath);
 
                 const profileImagePath = `/user/img/${filename}`;
@@ -185,16 +196,15 @@ const userController = {
             }
 
             res.redirect('/user/view/' + userId);
-
         } catch (err) {
-            console.error(err);
+            console.error("Error updating profile:", err);
             res.status(500).send("Error updating profile");
         }
     },
 
-    // ==========================
+    // ----------------------
     // Logout
-    // ==========================
+    // ----------------------
     postLogout: (req, res) => {
         req.session.destroy((err) => {
             if (err) {
@@ -205,21 +215,19 @@ const userController = {
         });
     },
 
+    // ----------------------
+    // ดูโปรไฟล์จาก session
+    // ----------------------
     getProfile: async (req, res) => {
         try {
-            const userId = req.session.user.id; // หรือจาก session
-            const user = await prisma.account.findUnique({
-                where: { User_id: userId },
-                include: { Profile_Image: true } // เอารูปทั้งหมดของ user
-            });
-
+            const userId = req.session.user.id;
+            const user = userModels.getUser(userId);
             res.render('view_profile', { user });
         } catch (err) {
-            console.error(err);
+            console.error("Error fetching profile:", err);
             res.status(500).send("Server Error");
         }
     }
-
 
 };
 
