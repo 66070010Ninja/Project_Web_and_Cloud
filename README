@@ -1,0 +1,7 @@
+SETUP PROJECT
+
+npm init -y
+
+docker-compose up -d
+
+npx prisma db push
