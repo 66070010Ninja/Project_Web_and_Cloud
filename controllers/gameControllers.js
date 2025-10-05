@@ -116,7 +116,7 @@ const gameController = {
             let tags = req.body['tags[]'];
             if (!tags) tags = [];
             else if (!Array.isArray(tags)) tags = [tags];
-            console.log("Tags:", tags);
+            // console.log("Tags:", tags);
 
             // --- 5) บันทึกไฟล์เกม ---
             const gameFileName = Date.now() + "_" + gameFile.name;

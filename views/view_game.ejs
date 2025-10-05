@@ -81,7 +81,7 @@
          ========================== -->
     <h3>Download Game File</h3>
     <% if(game.File_Game){ %>
-        <a href="<%= game.File_Game %>" download>
+        <a href="/game/file/<%= game.File_Game %>" download>
             <button type="button">Download Game (.zip)</button>
         </a>
     <% } else { %>
