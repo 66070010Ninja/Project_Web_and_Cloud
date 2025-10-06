@@ -1,0 +1,275 @@
+
+body {
+    margin: 0; /* <-- จุดสำคัญที่สุดคือบรรทัดนี้ */
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: #ffffff; /* เปลี่ยนพื้นหลังเป็นสีขาว */
+    color: #333; /* เปลี่ยนสีตัวอักษรเป็นสีเข้ม */
+}
+
+/* ตั้งค่าให้ Navbar มีความกว้างเต็ม 100% */
+.navbar {
+    width: 100%;
+    box-sizing: border-box; /* ป้องกันไม่ให้ padding ทำให้ขนาดเกิน 100% */
+}
+
+/* ตั้งค่าให้ Container ของเนื้อหาอยู่ตรงกลางและไม่ชิดขอบ */
+.container {
+    max-width: 1200px; /* กำหนดความกว้างสูงสุดของเนื้อหา */
+    margin: 20px auto; /* เว้นระยะห่างด้านบน-ล่าง และจัดให้อยู่ตรงกลางแนวนอน */
+    padding: 0 20px;   /* เว้นระยะห่างซ้าย-ขวาเล็กน้อย */
+}
+
+/* === NAVBAR STYLES === */
+
+/* Main Navbar Container */
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #424242;
+    padding: 8px 25px;
+    color: white;
+}
+
+/* Left Section */
+.nav-left {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.logo {
+    height: 40px;
+}
+
+.nav-link {
+    color: #ffffff;
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 1rem;
+}
+
+/* Center Section */
+.nav-center {
+    flex-grow: 1;
+    display: flex;
+    justify-content: center;
+}
+
+.search-container {
+    position: relative;
+    width: 60%;
+    max-width: 550px;
+}
+
+.search-input {
+    width: 100%;
+    padding: 10px 45px 10px 20px;
+    border-radius: 50px;
+    border: none;
+    font-size: 1rem;
+    box-sizing: border-box;
+}
+
+.search-button {
+    position: absolute;
+    right: 5px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    color: #757575;
+    font-size: 1rem;
+}
+
+/* Right Section */
+.nav-right {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+/* Logged-in state */
+.user-profile-link {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    color: white;
+}
+
+.user-avatar {
+    height: 32px;
+    width: 32px;
+    border-radius: 50%;
+    border: 1px solid #757575;
+}
+
+/* Logged-out state buttons */
+.nav-auth-btn {
+    color: white;
+    text-decoration: none;
+    padding: 8px 16px;
+    border: 1px solid white;
+    border-radius: 20px;
+    transition: background-color 0.2s, color 0.2s;
+    font-weight: bold;
+}
+
+.nav-auth-btn:hover {
+    background-color: white;
+    color: #424242;
+}
+
+.nav-auth-btn-primary {
+    background-color: #f06000; /* Example primary orange color */
+    border-color: #f06000;
+}
+
+.nav-auth-btn-primary:hover {
+    background-color: #d85600;
+    border-color: #d85600;
+    color: white;
+}
+
+/* === HERO BANNER STYLES === */
+.hero-banner {
+    position: relative;
+    height: 200px;
+    background-image: url('/images/web.png'); /* <-- แก้ไข path รูปภาพของคุณ */
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    color: white;
+}
+.hero-banner::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+}
+.hero-banner .hero-content {
+    position: relative;
+}
+.hero-banner h1 {
+    font-size: 3.5rem;
+    font-weight: 700;
+    margin: 0 0 15px 0;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+}
+.hero-banner .slogan {
+    font-size: 1.2rem;
+    font-style: italic;
+    margin: 5px 0;
+    color: #dddddd;
+}
+/* === MAIN PAGE LAYOUT === */
+.page-body {
+    display: flex;
+    /* เทคนิคสำคัญ: ทำให้ sidebar ยาวเต็มความสูง */
+    overflow: hidden; 
+}
+
+
+/* === SIDEBAR STYLES === */
+.sidebar {
+    flex: 0 0 240px; /* ความกว้าง sidebar 240px */
+    background-color: #2c3e50; /* สีน้ำเงินเข้ม */
+    padding: 20px;
+    color: #ecf0f1;
+    /* เทคนิคสำคัญ: ทำให้พื้นหลังสีน้ำเงินยาวลงไปสุดจอ */
+    padding-bottom: 9999px;
+    margin-bottom: -9999px;
+}
+.sidebar h3 {
+    margin-top: 0;
+    padding-bottom: 10px;
+    margin-bottom: 10px;
+    border-bottom: 1px solid #3e5166;
+    font-size: 1.1rem;
+}
+.tag-list {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+}
+.tag-list li a {
+    display: block;
+    padding: 9px 5px;
+    color: #bdc3c7;
+    text-decoration: none;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+.tag-list li a:hover {
+    background-color: #3e5166;
+    color: #ffffff;
+}
+
+
+/* === MAIN CONTENT STYLES === */
+.content-area {
+    flex-grow: 1; /* ทำให้เนื้อหาหลักขยายเต็มพื้นที่ที่เหลือ */
+    background-color: #ffffff;
+    width: 100%;
+}
+.container {
+    max-width: 1100px;
+    margin: 0 auto; /* จัดให้อยู่กลาง */
+    padding: 30px 20px; /* ระยะห่างภายใน */
+}
+.content-area h2 {
+    font-size: 1.5rem;
+    margin-top: 0;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 10px;
+}
+
+
+/* === GAME GRID & WIDGETS === */
+.placeholder-widget {
+    background-color: #f0f0f0;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #aaa;
+}
+.game-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 20px;
+}
+.game-card-small .game-card-thumbnail {
+    height: 100px;
+    background-color: #e9ecef;
+    border-radius: 6px;
+    margin-bottom: 10px;
+}
+.game-card-small h4 {
+    margin: 0 0 5px 0;
+}
+.game-card-small p {
+    margin: 0;
+    font-size: 0.8rem;
+    color: #6c757d;
+}
+
+
+/* === FOOTER === */
+.footer {
+    background-color: #343a40;
+    color: #fff;
+    text-align: center;
+    padding: 20px;
+}

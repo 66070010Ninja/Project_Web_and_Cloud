@@ -1,0 +1,38 @@
+<nav class="navbar">
+    <div class="nav-left">
+        <a href="/">
+            <img src="/images/logo.png" alt="Logo" class="logo">
+        </a>
+        <a href="/browse" class="nav-link">Browse</a>
+        <a href="/dashboard" class="nav-link">Dashboard</a>
+    </div>
+
+    <div class="nav-center">
+        <form action="/search" method="GET" class="search-container">
+            <input type="text" name="query" placeholder="Search" class="search-input">
+            <button type="submit" class="search-button">
+                <i class="fas fa-search"></i>
+            </button>
+        </form>
+    </div>
+
+    <div class="nav-right">
+        <% if (typeof user !== 'undefined' && user) { %>
+            <a href="/user/logout" class="nav-auth-btn">Logout</a>
+            <a href="/user/view/<%= user.id %>" class="user-profile-link">
+
+                <% if (user.Profile_Image && user.Profile_Image.length > 0) { %>
+                    <% let lastImage = user.Profile_Image[user.Profile_Image.length - 1]; %>
+                    <img src="<%= lastImage.Path %>" alt="User Avatar" class="user-avatar">
+                <% } else { %>
+                    <img src="/user/img/user_default.jpg" alt="User Avatar" class="user-avatar">
+                <% } %>
+                <span class="user-name"><%= user.username || 'User' %></span>
+                <i class="fas fa-caret-down dropdown-icon"></i>
+            </a>
+        <% } else { %>
+            <a href="/user/login" class="nav-auth-btn">Login</a>
+            <a href="/user/register" class="nav-auth-btn nav-auth-btn-primary">Register</a>
+        <% } %>
+    </div>
+</nav>
