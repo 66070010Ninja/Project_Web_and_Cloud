@@ -1,18 +1,26 @@
 const gameModels = require('../models/gameModels');
+const userModels = require('../models/userModels');
 
 const pageController = {
     getHomePage: async (req, res) => {
         try {
-            // ดึงเกมทั้งหมด (สามารถเพิ่ม orderBy, limit, filter ได้)
+            // Fetch all games
             const games = await gameModels.getAllGames();
+            
+            let user = null;
+            // Check if a user ID exists in the session
+            if (req.session && req.session.userId) {
+                // If it exists, fetch the user's data
+                user = await userModels.findByUserID(req.session.userId);
+            }
 
-            // ส่งตัวแปร games และ user (จาก session) ให้ view
+            // Render the home page, passing the games and the user (which will be null if not logged in)
             res.render('home', {
                 games,
-                user: req.session.user || null
+                user
             });
         } catch (error) {
-            console.error("Error fetching games:", error);
+            console.error("Error fetching data for home page:", error);
             res.status(500).send("Internal Server Error");
         }
     }

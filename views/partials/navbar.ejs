@@ -21,14 +21,14 @@
             <form action="/user/logout" method="POST" style="display: inline;">
                 <button type="submit" class="nav-auth-btn">Logout</button>
             </form>
-            <a href="/user/view/<%= user.id %>" class="user-profile-link">
-                <% if (user.Profile_Image && user.Profile_Image.length > 0) { %>
-                    <% let lastImage = user.Profile_Image[user.Profile_Image.length - 1]; %>
+            <a href="/user/view/<%= user.User_id %>" class="user-profile-link">
+                <% if (user.Profile_Image && user.Profile_Image.length> 0) { %>
+                    <% let lastImage=user.Profile_Image[user.Profile_Image.length - 1]; %>
                     <img src="<%= lastImage.Path %>" alt="User Avatar" class="user-avatar">
                 <% } else { %>
                     <img src="/user/img/user_default.jpg" alt="User Avatar" class="user-avatar">
                 <% } %>
-                <span class="user-name"><%= user.username || 'User' %></span>
+                <span class="user-name"><%= user.User_Name || 'User' %></span>
                 <i class="fas fa-caret-down dropdown-icon"></i>
             </a>
         <% } else { %>

@@ -96,13 +96,9 @@ const userController = {
                 });
             }
 
-            // เก็บข้อมูลผู้ใช้ใน session
-            req.session.user = {
-                id: user.User_id,
-                username: user.User_Name,
-                email: user.Email,
-                role: user.Roles
-            };
+            // --- CORRECTED LINE ---
+            // เก็บ ID ของผู้ใช้ใน session ให้ตรงกับที่ home page controller ต้องการ
+            req.session.userId = user.User_id;
 
             res.redirect('/'); // ไปหน้าแรก
         } catch (error) {
