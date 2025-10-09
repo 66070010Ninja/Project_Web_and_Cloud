@@ -1,0 +1,190 @@
+/* General Body Styles */
+body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: #f0f2f5;
+    color: #333;
+}
+
+/* Main content area */
+.dashboard-main {
+    padding: 30px 20px;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* Dashboard Header */
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.dashboard-header h1 {
+    margin: 0;
+    font-size: 2rem;
+    font-weight: 700;
+}
+
+/* Section Header for "My Games" */
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.section-header h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.total-stats {
+    display: flex;
+    gap: 25px;
+    background-color: #e9ecef;
+    padding: 8px 15px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #495057;
+}
+
+.total-stats span {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Game List Layout */
+.game-list-container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px; /* Space between list items */
+}
+
+/* Individual Game List Item */
+.game-list-item {
+    background-color: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.07);
+    display: flex;
+    align-items: center;
+    padding: 15px;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.game-list-item:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+}
+
+/* Game Image */
+.game-list-image {
+    width: 130px; /* Fixed width */
+    height: 73px; /* 16:9 ratio */
+    flex-shrink: 0;
+    margin-right: 20px;
+    border-radius: 6px;
+    overflow: hidden;
+    background-color: #f0f0f0;
+}
+
+.game-list-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Game Details */
+.game-list-details {
+    flex-grow: 1; /* Takes up available space to push other items to the right */
+}
+
+.game-list-title {
+    margin: 0 0 10px 0;
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+.game-list-stats {
+    display: flex;
+    gap: 25px;
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+
+.game-list-stats span {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* Action Buttons */
+.game-list-actions {
+    display: flex;
+    gap: 10px;
+}
+
+
+/* Buttons */
+.btn {
+    text-decoration: none;
+    padding: 8px 15px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: bold;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.btn-primary {
+    background-color: #007bff;
+    color: white;
+}
+.btn-primary:hover {
+    background-color: #0056b3;
+}
+
+.btn-edit {
+    background-color: #333;
+    color: white;
+    
+}
+.btn-edit:hover {
+    background-color: #555;
+}
+
+.btn-delete {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+}
+.btn-delete:hover {
+    background-color: #c82333;
+}
+
+/* No Games Message */
+.no-games-message {
+    text-align: center;
+    padding: 50px;
+    background-color: #fff;
+    border-radius: 12px;
+}
+.no-games-message p {
+    font-size: 1.2rem;
+    color: #6c757d;
+    margin-bottom: 20px;
+}
