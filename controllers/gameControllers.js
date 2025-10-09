@@ -243,7 +243,7 @@ const gameController = {
             if (!req.session.userId)
                 return res.status(401).send("Unauthorized: Please log in first.");
 
-            const gameId = parseInt(req.session.userId, 10);
+            const gameId = parseInt(req.params.id, 10);
             const { comment } = req.body;
 
             await gameModels.createReview({
