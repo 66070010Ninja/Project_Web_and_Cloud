@@ -50,9 +50,12 @@ app.use(express.static('public'));
 // --------------------------
 // Routes
 // --------------------------
+const adminRoute = require('./routes/adminRouters');
 const userRoute = require('./routes/userRoutes');
 const gameRoute = require('./routes/gameRoutes');
 const pageRoute = require('./routes/pageRoutes');
+
+app.use('/admin', adminRoute);
 
 // เส้นทางที่เกี่ยวข้องกับผู้ใช้
 app.use('/user', userRoute);
