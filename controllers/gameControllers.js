@@ -93,7 +93,7 @@ const gameController = {
             const { title_game, description, status_game, details } = req.body;
 
             // --- 1) ตรวจสอบการล็อกอิน ---
-            if (!req.session.user)
+            if (!req.session.userId)
                 return res.status(401).json({ error: "กรุณาเข้าสู่ระบบก่อน" });
 
             // --- 2) ตรวจสอบไฟล์เกม ---
@@ -125,7 +125,7 @@ const gameController = {
 
             // --- 6) สร้างเกมใน DB ---
             const newGame = await gameModels.createGame({
-                user_id: req.session.user.id,
+                user_id: req.session.userId,
                 title_game,
                 description,
                 status_game,
@@ -240,15 +240,15 @@ const gameController = {
     // ==================================================
     postCreateReview: async (req, res) => {
         try {
-            if (!req.session.user)
+            if (!req.session.userId)
                 return res.status(401).send("Unauthorized: Please log in first.");
 
-            const gameId = parseInt(req.params.id, 10);
+            const gameId = parseInt(req.session.userId, 10);
             const { comment } = req.body;
 
             await gameModels.createReview({
                 game_id: gameId,
-                user_id: req.session.user.id,
+                user_id: req.session.userId,
                 comment
             });
 
