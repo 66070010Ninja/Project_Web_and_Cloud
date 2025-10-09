@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home - Game Platform</title>
+    <link rel="stylesheet" href="/css/home.css">
+    <link rel="stylesheet" href="/css/navbar.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+</head>
+
+<body>
+    
+    <%- include('partials/navbar') %>
+
+    <div class="hero-banner">
+        <div class="hero-content">
+            <h1>LEVEL <span>ZERO</span></h1>
+            <p class="slogan">"Let the world know your game."</p>
+            <p class="slogan">"Make your name known in the game."</p>
+        </div>
+    </div>
+    
+    <div class="page-body">
+        
+        <aside class="sidebar">
+            <h3>Popular Tags</h3>
+            <ul class="tag-list">
+                <li><a href="/tags/action">Action</a></li>
+                <li><a href="/tags/adventure">Adventure</a></li>
+                <li><a href="/tags/card-game">Card Game</a></li>
+                <li><a href="/tags/educational">Educational</a></li>
+                <li><a href="/tags/fighting">Fighting</a></li>
+                <li><a href="/tags/interactive-fiction">Interactive Fiction</a></li>
+                <li><a href="/tags/puzzle">Puzzle</a></li>
+                <li><a href="/tags/racing">Racing</a></li>
+                <li><a href="/tags/other">Other</a></li>
+            </ul>
+        </aside>
+
+        <main class="content-area">
+            <div class="container">
+                <h2>Featured Game</h2>
+                <div class="placeholder-widget" style="height: 250px; margin-bottom: 40px;">
+                    <% if (user) { %>
+                        <a href="/game/create" class="btn">Create New Game</a>
+                    <% } %>
+                </div>

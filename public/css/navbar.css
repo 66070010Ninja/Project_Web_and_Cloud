@@ -1,0 +1,111 @@
+/* === NAVBAR STYLES === */
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #424242;
+    padding: 8px 25px;
+    color: white;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.nav-left {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.logo {
+    height: 40px;
+}
+
+.nav-link {
+    color: #ffffff;
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 1rem;
+}
+
+.nav-center {
+    flex-grow: 1;
+    display: flex;
+    justify-content: center;
+}
+
+.search-container {
+    position: relative;
+    width: 60%;
+    max-width: 550px;
+}
+
+.search-input {
+    width: 100%;
+    padding: 10px 45px 10px 20px;
+    border-radius: 50px;
+    border: none;
+    font-size: 1rem;
+    box-sizing: border-box;
+}
+
+.search-button {
+    position: absolute;
+    right: 5px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    color: #757575;
+    font-size: 1rem;
+}
+
+.nav-right {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.user-profile-link {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    color: white;
+}
+
+.user-avatar {
+    height: 32px;
+    width: 32px;
+    border-radius: 50%;
+    border: 1px solid #757575;
+}
+
+.nav-auth-btn {
+    color: white;
+    text-decoration: none;
+    padding: 8px 16px;
+    border: 1px solid white;
+    border-radius: 20px;
+    transition: background-color 0.2s, color 0.2s;
+    font-weight: bold;
+    background-color: transparent;
+    cursor: pointer;
+}
+
+.nav-auth-btn:hover {
+    background-color: white;
+    color: #424242;
+}
+
+.nav-auth-btn-primary {
+    background-color: #f06000;
+    border-color: #f06000;
+}
+
+.nav-auth-btn-primary:hover {
+    background-color: #d85600;
+    border-color: #d85600;
+    color: white;
+}

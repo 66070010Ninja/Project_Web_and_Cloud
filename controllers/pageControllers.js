@@ -27,7 +27,20 @@ const pageController = {
 
     getBrowsePage: async (req, res) => {
         try {
-            res.render('browse');
+            // Fetch all games
+            const games = await gameModels.getAllGames();
+
+            let user = null;
+            // Check if a user ID exists in the session
+            if (req.session && req.session.userId) {
+                // If it exists, fetch the user's data
+                user = await userModels.findByUserID(req.session.userId);
+            };
+
+            res.render('browse', {
+                games,
+                user
+            });
         } catch (error) {
             console.log("Error fetching data for browse page:", error);
             res.status(500).send("Internal Server Error");
@@ -36,7 +49,19 @@ const pageController = {
 
     getDashboardPage: async (req, res) => {
         try {
-            res.render('dashboard');
+            // Fetch all games
+            const games = await gameModels.getAllGames();
+
+            let user = null;
+            // Check if a user ID exists in the session
+            if (req.session && req.session.userId) {
+                // If it exists, fetch the user's data
+                user = await userModels.findByUserID(req.session.userId);
+            };
+            res.render('dashboard', {
+                games,
+                user
+            });
         } catch (error) {
             console.log("Error fetching data for dashboard page:", error);
             res.status(500).send("Internal Server Error");
