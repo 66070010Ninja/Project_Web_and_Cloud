@@ -51,7 +51,7 @@ const userController = {
     // ----------------------
     getEditProfilePage: async (req, res) => {
         try {
-            const userId = req.session.user?.id; // ดึง id จาก session
+            const userId = req.session.userId; // ดึง id จาก session
             const user = await userModels.findByUserID(userId);
 
             if (!user) return res.status(404).send("User not found");
