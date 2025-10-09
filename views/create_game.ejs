@@ -1,174 +1,235 @@
-<!-- ==========================
-     create_game.ejs
-     ========================== -->
-
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <!-- CSS ของ select2 -->
+    <title>Create New Game</title>
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="/css/navbar.css">
+    <link rel="stylesheet" href="/css/create_game.css">
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-
-    <title>Create Game</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 </head>
-
 <body>
-    <h2>Create Game</h2>
 
-    <!-- ==========================
-         ฟอร์มสร้างเกม
-         ========================== -->
-    <form id="gameForm" action="/game/create" method="POST" enctype="multipart/form-data">
+    <%- include('partials/navbar') %>
 
-        <!-- ชื่อเกม -->
-        <label for="title_game">Title Game: </label>
-        <input type="text" name="title_game" id="title_game" required>
-        <br>
+    <div class="main-container">
+        <form id="gameForm" class="create-game-form" action="/game/create" method="POST" enctype="multipart/form-data">
+            
+            <div class="form-header">
+                <h1>Create New Game</h1>
+            </div>
 
-        <!-- อัปโหลดรูปภาพเกม -->
-        <label for="images_game">Upload Image Game (อย่างน้อย 1 รูป): </label>
-        <input type="file" id="images_game" multiple>
-        <div id="preview" style="display:flex; flex-wrap:wrap; gap:10px; margin-block-start:10px;"></div>
-        <br>
+            <div class="form-body">
+                <!-- Left Column -->
+                <div class="form-column left">
+                    <div class="form-group">
+                        <label for="title_game">Title Game</label>
+                        <input type="text" id="title_game" name="title_game" class="form-control" placeholder="Enter the name of your game" required>
+                    </div>
 
-        <!-- อัปโหลดไฟล์เกม -->
-        <label for="file_game">Upload File Game (.zip): </label>
-        <input type="file" id="file_game" accept=".zip">
-        <div id="fileGameName" style="color:green; margin-block-start:5px;"></div>
-        <br>
+                    <div class="form-group">
+                        <label for="description">Short description</label>
+                        <textarea id="description" name="description" class="form-control" rows="4" placeholder="Tell us about your game"></textarea>
+                    </div>
 
-        <!-- คำอธิบายสั้น -->
-        <label for="description">Short Description: </label>
-        <input type="text" name="description" id="description" required>
-        <br>
+                    <div class="form-group">
+                        <label for="details">Details</label>
+                        <textarea id="details" name="details" class="form-control" rows="6" placeholder="Provide more details about your game"></textarea>
+                    </div>
 
-        <!-- สถานะการพัฒนาเกม -->
-        <label for="status_game">Release Status: </label>
-        <select name="status_game" id="status_game" required>
-            <option value="Alpha">Alpha</option>
-            <option value="Beta">Beta</option>
-            <option value="Released">Released</option>
-        </select>
-        <br>
+                     <div class="form-group">
+                        <label for="status_game">Release status</label>
+                        <select id="status_game" name="status_game" class="form-control">
+                            <option value="In development">In development</option>
+                            <option value="Released">Released</option>
+                            <option value="Alpha">Alpha</option>
+                            <option value="Beta">Beta</option>
+                        </select>
+                    </div>
 
-        <!-- รายละเอียดเพิ่มเติม -->
-        <label for="details">Details: </label>
-        <input type="text" name="details" id="details" required>
-        <br>
+                    <div class="form-group">
+                        <label for="tags">Tags</label>
+                        <select id="tags" name="tags" class="form-control" multiple="multiple">
+                             <option value="Action">Action</option>
+                            <option value="Adventure">Adventure</option>
+                            <option value="Card Game">Card Game</option>
+                            <option value="Educational">Educational</option>
+                            <option value="Fighting">Fighting</option>
+                            <option value="Interactive Fiction">Interactive Fiction</option>
+                            <option value="Puzzle">Puzzle</option>
+                            <option value="Racing">Racing</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                </div>
 
-        <!-- Tags -->
-        <label for="tags">Tags (เลือกอย่างน้อย 1 ตัว): </label>
-        <select id="tags" multiple="multiple">
-            <option value="Action">Action</option>
-            <option value="Adventure">Adventure</option>
-            <option value="Card_Game">Card Game</option>
-            <option value="Educational">Educational</option>
-            <option value="Fighting">Fighting</option>
-            <option value="Interactive_Fiction">Interactive Fiction</option>
-            <option value="Puzzle">Puzzle</option>
-            <option value="Racing">Racing</option>
-            <option value="Other">Other</option>
-        </select>
-        <br>
+                <!-- Right Column -->
+                <div class="form-column right">
+                    <div class="form-group">
+                        <label>Upload Image Game: Screenshots</label>
+                         <div class="upload-box" id="imagesUploadBox">
+                            <input type="file" id="images_game" accept="image/*" class="file-input" multiple>
+                            <div class="upload-content">
+                                <i class="fas fa-images"></i>
+                                <p>Click to browse or drag & drop</p>
+                            </div>
+                        </div>
+                        <div id="imagesPreview" class="image-preview-container"></div>
+                    </div>
 
-        <!-- ปุ่มสร้างเกม -->
-        <button type="submit">Create</button>
-    </form>
+                    <div class="form-group">
+                        <label>Upload File Game (.zip)</label>
+                        <div class="upload-box" id="fileUploadBox">
+                             <input type="file" id="file_game" accept=".zip" class="file-input">
+                             <div class="upload-content">
+                                 <i class="fas fa-file-archive"></i>
+                                 <p>Upload your game file</p>
+                             </div>
+                        </div>
+                         <div id="fileName" class="file-name-display"></div>
+                    </div>
+                </div>
+            </div>
 
-    <!-- ==========================
-         Script
-         ========================== -->
+            <div class="form-footer">
+                <button type="submit" class="btn btn-primary">Add Game</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Scripts -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-
     <script>
-    $(document).ready(function () {
-        $('#tags').select2({
-            placeholder: "เลือก Tags",
-            allowClear: true,
-            tags: true
+        $(document).ready(function() {
+            $('#tags').select2({
+                placeholder: "Select tags for your game",
+                allowClear: true
+            });
         });
-    });
 
-    let selectedFiles = [];
-    let selectedGameFile = null;
+        let selectedFiles = [];
+        let selectedGameFile = null;
 
-    // preview รูปภาพ
-    document.getElementById('images_game').addEventListener('change', function () {
-        for (let file of this.files) selectedFiles.push(file);
-        renderPreview();
-        this.value = "";
-    });
-    function removeImage(index) {
-        selectedFiles.splice(index, 1);
-        renderPreview();
-    }
-    function renderPreview() {
-        const preview = document.getElementById('preview');
-        preview.innerHTML = "";
-        selectedFiles.forEach((file, i) => {
-            const div = document.createElement('div');
-            div.style.position = "relative";
-            const img = document.createElement('img');
-            img.src = URL.createObjectURL(file);
-            img.width = 150;
-            const btn = document.createElement('button');
-            btn.innerText = "✖";
-            btn.style = "position:absolute;inset-block-start:0;inset-inline-end:0;background:red;color:white;border:none;cursor:pointer;";
-            btn.onclick = () => removeImage(i);
-            div.appendChild(img);
-            div.appendChild(btn);
-            preview.appendChild(div);
+        // --- Image Upload Logic (Drag and Drop) ---
+        const imagesUploadBox = document.getElementById('imagesUploadBox');
+        const imagesInput = document.getElementById('images_game');
+
+        imagesUploadBox.addEventListener('click', () => imagesInput.click());
+        imagesUploadBox.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            imagesUploadBox.classList.add('dragover');
         });
-    }
+        imagesUploadBox.addEventListener('dragleave', () => imagesUploadBox.classList.remove('dragover'));
+        imagesUploadBox.addEventListener('drop', (e) => {
+            e.preventDefault();
+            imagesUploadBox.classList.remove('dragover');
+            handleImageFiles(e.dataTransfer.files);
+        });
+        imagesInput.addEventListener('change', (e) => handleImageFiles(e.target.files));
 
-    // เลือกไฟล์เกม
-    document.getElementById('file_game').addEventListener('change', function () {
-        const file = this.files[0];
-        const fileNameDiv = document.getElementById('fileGameName');
-        if (file) {
-            if (file.name.endsWith('.zip')) {
+        function handleImageFiles(files) {
+            for (let file of files) {
+                if (file.type.startsWith('image/')) {
+                    selectedFiles.push(file);
+                }
+            }
+            renderPreview();
+            imagesInput.value = ""; 
+        }
+
+        function removeImage(index) {
+            selectedFiles.splice(index, 1);
+            renderPreview();
+        }
+
+        function renderPreview() {
+            const preview = document.getElementById('imagesPreview');
+            preview.innerHTML = "";
+            selectedFiles.forEach((file, i) => {
+                const div = document.createElement('div');
+                div.className = 'image-preview-wrapper';
+                const img = document.createElement('img');
+                img.src = URL.createObjectURL(file);
+                img.className = 'image-preview';
+                const btn = document.createElement('button');
+                btn.type = "button";
+                btn.innerText = "×";
+                btn.className = 'remove-img-btn';
+                btn.onclick = () => removeImage(i);
+                div.appendChild(img);
+                div.appendChild(btn);
+                preview.appendChild(div);
+            });
+        }
+
+        // --- Game File Upload Logic (Drag and Drop) ---
+        const fileUploadBox = document.getElementById('fileUploadBox');
+        const fileInput = document.getElementById('file_game');
+        const fileNameDiv = document.getElementById('fileName');
+        
+        fileUploadBox.addEventListener('click', () => fileInput.click());
+        fileUploadBox.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            fileUploadBox.classList.add('dragover');
+        });
+        fileUploadBox.addEventListener('dragleave', () => fileUploadBox.classList.remove('dragover'));
+        fileUploadBox.addEventListener('drop', (e) => {
+            e.preventDefault();
+            fileUploadBox.classList.remove('dragover');
+            if (e.dataTransfer.files.length > 0) handleGameFile(e.dataTransfer.files[0]);
+        });
+        fileInput.addEventListener('change', (e) => {
+             if (e.target.files.length > 0) handleGameFile(e.target.files[0]);
+        });
+
+        function handleGameFile(file) {
+            if (file && file.name.endsWith('.zip')) {
                 selectedGameFile = file;
                 fileNameDiv.innerText = "Selected: " + file.name;
+                fileNameDiv.style.display = 'block';
             } else {
                 alert("ไฟล์ต้องเป็น .zip เท่านั้น!");
-                this.value = "";
                 selectedGameFile = null;
                 fileNameDiv.innerText = "";
+                fileNameDiv.style.display = 'none';
             }
+            fileInput.value = "";
         }
-    });
 
-    // ส่งฟอร์ม
-    document.getElementById("gameForm").addEventListener("submit", function (e) {
-        e.preventDefault();
 
-        if (selectedFiles.length < 1) { alert("กรุณาอัปโหลดรูปภาพอย่างน้อย 1 รูป"); return; }
-        if (!selectedGameFile) { alert("กรุณาเลือกไฟล์เกม (.zip) ด้วย!"); return; }
+        // --- Form Submission ---
+        document.getElementById('gameForm').addEventListener('submit', function(e) {
+            e.preventDefault();
 
-        const selectedTags = $('#tags').val();
-        if (!selectedTags || selectedTags.length === 0) { alert("กรุณาเลือก Tags อย่างน้อย 1 ตัว"); return; }
+            if (selectedFiles.length < 1) { alert("กรุณาอัปโหลดรูปภาพอย่างน้อย 1 รูป"); return; }
+            if (!selectedGameFile) { alert("กรุณาเลือกไฟล์เกม (.zip) ด้วย!"); return; }
 
-        const formData = new FormData(this);
+            const selectedTags = $('#tags').val();
+            if (!selectedTags || selectedTags.length === 0) { alert("กรุณาเลือก Tags อย่างน้อย 1 ตัว"); return; }
 
-        selectedFiles.forEach(file => formData.append("images", file));
-        formData.append("file_game", selectedGameFile);
-        selectedTags.forEach(tag => formData.append("tags[]", tag)); // ใช้ tags[] !!!
+            const formData = new FormData(this);
+            formData.delete('images_game');
+            formData.delete('file_game');
 
-        fetch("/game/create", { method: "POST", body: formData })
-            .then(res => res.json())
-            .then(data => {
-                if (data.error) { alert(data.error); return; }
-                alert("สร้างเกมสำเร็จ!");
-                window.location.href = "/game/view/" + data.game.Game_id;
-            })
-            .catch(err => console.error(err));
-    });
+            selectedFiles.forEach(file => formData.append("images", file));
+            formData.append("file_game", selectedGameFile);
+            
+            fetch("/game/create", { method: "POST", body: formData })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.error) {
+                        alert(data.error);
+                        return;
+                    }
+                    alert("สร้างเกมสำเร็จ!");
+                    window.location.href = "/game/view/" + data.game.Game_id;
+                })
+                .catch(err => console.error(err));
+        });
     </script>
-
 </body>
-
 </html>

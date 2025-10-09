@@ -6,6 +6,7 @@
 // Import Dependencies
 // --------------------------
 const gameModels = require('../models/gameModels');
+const userModels = require('../models/userModels');
 const dayjs = require('dayjs');
 const relativeTime = require('dayjs/plugin/relativeTime');
 const path = require('path');
@@ -22,8 +23,26 @@ const gameController = {
     // ==================================================
     // แสดงหน้า Create Game
     // ==================================================
-    getCreateGamePage: (req, res) => {
-        res.render('create_game', { error: null });
+    getCreateGamePage: async (req, res) => {
+        try {
+            let user = null;
+            // ตรวจสอบว่ามี userId อยู่ใน session หรือไม่
+            if (req.session && req.session.userId) {
+                // ถ้ามี ให้ดึงข้อมูลผู้ใช้จากฐานข้อมูล
+                user = await userModels.findByUserID(req.session.userId);
+            }
+
+            // Render หน้า create_game พร้อมส่งข้อมูล user และ error ไปด้วย
+            res.render('create_game', {
+                user: user, // ส่งข้อมูลผู้ใช้ (จะเป็น null หากยังไม่ล็อกอิน)
+                error: null 
+            });
+
+        } catch (err) {
+            console.error("Error fetching user for create game page:", err);
+            // อาจจะ render หน้า error หรือ redirect ไปที่อื่น
+            res.status(500).send("An error occurred");
+        }
     },
 
     // ==================================================
