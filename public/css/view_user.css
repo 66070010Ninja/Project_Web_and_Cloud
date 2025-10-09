@@ -1,0 +1,126 @@
+/* General Body Styles */
+body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: #f0f2f5; /* Light grey background */
+    color: #333;
+}
+
+/* Main content area to center the profile card */
+.profile-main {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 40px 20px;
+}
+
+/* Profile Card Container */
+.profile-container {
+    background-color: #ffffff;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 700px; /* Increased max-width for the new layout */
+    box-sizing: border-box;
+}
+
+/* Flex container for avatar and content */
+.profile-body {
+    display: flex;
+    align-items: flex-start;
+    gap: 30px;
+}
+
+/* Avatar on the left */
+.profile-avatar {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 4px solid #e9ecef;
+    background-color: #f8f9fa;
+    flex-shrink: 0; /* Prevent avatar from shrinking */
+}
+
+.profile-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Content area on the right */
+.profile-content {
+    flex-grow: 1;
+    text-align: left;
+}
+
+.profile-header h2 {
+    margin: 0 0 15px 0;
+    font-size: 1.8rem;
+    color: #333;
+    font-weight: 600;
+}
+
+/* Profile Details Section */
+.profile-details {
+    margin-bottom: 30px;
+    border-top: 1px solid #e9ecef;
+    padding-top: 10px;
+}
+
+.detail-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-bottom: 1px solid #f8f9fa;
+}
+
+.detail-label {
+    font-weight: 500;
+    color: #6c757d;
+}
+
+.detail-value {
+    color: #343a40;
+}
+
+/* Action Buttons Container */
+.profile-actions {
+    display: flex;
+    justify-content: flex-start;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.btn {
+    text-decoration: none;
+    padding: 10px 25px;
+    border-radius: 20px;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.2s;
+}
+
+.btn-primary {
+    background-color: #333;
+    color: white;
+    border-color: #333;
+}
+
+.btn-primary:hover {
+    background-color: #555;
+    border-color: #555;
+}
+
+.btn-secondary {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+}
+
+.btn-secondary:hover {
+    background-color: #c82333;
+}

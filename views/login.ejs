@@ -1,52 +1,52 @@
-<!-- ==========================
-     views/login.ejs
-     ========================== -->
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login</title> <!-- ชื่อหน้าเว็บ -->
+    <title>Login - Level Zero</title>
+    <link rel="stylesheet" href="/css/login.css">
 </head>
 
 <body>
-    <h2>Login</h2> <!-- หัวข้อหน้า Login -->
 
-    <!-- ==========================
-         ฟอร์มสำหรับเข้าสู่ระบบ
-         ========================== -->
-    <form action="/user/login" method="post">
-        
-        <!-- ช่องกรอกชื่อผู้ใช้ -->
-        <label for="username">Username: </label>
-        <input type="text" 
-               id="username" 
-               name="username" 
-               value="<%= formData ? formData.username : '' %>" 
-               required>
-        <br>
+    <header class="top-bar">
+        <h1>LEVEL ZERO</h1>
+    </header>
 
-        <!-- ช่องกรอกรหัสผ่าน -->
-        <label for="password">Password: </label>
-        <input type="password" 
-               id="password" 
-               name="password" 
-               required>
-        <br>
+    <main class="login-main">
+        <div class="login-container">
+            <h2>Log in to your account</h2>
 
-        <!-- ปุ่มส่งฟอร์ม -->
-        <button type="submit">Login</button>
-    </form>
+            <form action="/user/login" method="post">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" 
+                           id="username" 
+                           name="username" 
+                           placeholder="Enter your username"
+                           value="<%= formData ? formData.username : '' %>" 
+                           required>
+                </div>
 
-    <!-- ==========================
-         แสดงข้อความ Error หากมี
-         ========================== -->
-    <% if (error) { %>
-        <p style="color:red;">
-            <%= error %> <!-- แสดงข้อความ error ที่ส่งมาจาก controller -->
-        </p>
-    <% } %>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" 
+                           id="password" 
+                           name="password" 
+                           placeholder="Enter your password"
+                           required>
+                </div>
+
+                <button type="submit" class="login-btn">Login</button>
+            </form>
+
+            <% if (error) { %>
+                <p class="error-message"><%= error %></p>
+            <% } %>
+        </div>
+    </main>
+
 </body>
 
 </html>

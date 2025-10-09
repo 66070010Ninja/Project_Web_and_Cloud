@@ -1,69 +1,71 @@
-<!-- ==========================
-     views/register.ejs
-     ========================== -->
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register</title> <!-- ชื่อหน้าเว็บ -->
+    <title>Register - Level Zero</title>
+    <link rel="stylesheet" href="/css/register.css">
 </head>
 
 <body>
-    <h2>Register</h2> <!-- หัวข้อหน้า Register -->
 
-    <!-- ==========================
-         ฟอร์มสำหรับสมัครสมาชิก
-         ========================== -->
-    <form action="/user/register" method="post">
+    <header class="top-bar">
+        <h1>LEVEL ZERO</h1>
+    </header>
 
-        <!-- ช่องกรอกชื่อผู้ใช้ -->
-        <label for="username">Username: </label>
-        <input type="text" 
-               id="username" 
-               name="username" 
-               value="<%= formData ? formData.username : '' %>" 
-               required>
-        <br>
+    <main class="register-main">
+        <div class="register-container">
+            <h2>Register your account</h2>
 
-        <!-- ช่องกรอกอีเมล -->
-        <label for="email">Email: </label>
-        <input type="email" 
-               id="email" 
-               name="email" 
-               value="<%= formData ? formData.email : '' %>" 
-               required>
-        <br>
+            <form action="/user/register" method="post">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" 
+                           id="username" 
+                           name="username" 
+                           placeholder="Enter your username"
+                           value="<%= formData ? formData.username : '' %>" 
+                           required>
+                </div>
 
-        <!-- ช่องกรอกรหัสผ่าน -->
-        <label for="password">Password: </label>
-        <input type="password" 
-               id="password" 
-               name="password" 
-               required>
-        <br>
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" 
+                           id="email" 
+                           name="email" 
+                           placeholder="Enter your email"
+                           value="<%= formData ? formData.email : '' %>" 
+                           required>
+                </div>
 
-        <!-- ช่องยืนยันรหัสผ่าน -->
-        <label for="confirm_password">Confirm Password: </label>
-        <input type="password" 
-               id="confirm_password" 
-               name="confirm_password" 
-               required>
-        <br>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" 
+                           id="password" 
+                           name="password" 
+                           placeholder="Enter your password"
+                           required>
+                </div>
 
-        <!-- ปุ่มส่งฟอร์ม -->
-        <button type="submit">Register</button>
-    </form>
+                <div class="form-group">
+                    <label for="confirm_password">Confirm Password</label>
+                    <input type="password" 
+                           id="confirm_password" 
+                           name="confirm_password" 
+                           placeholder="Confirm your password"
+                           required>
+                </div>
 
-    <!-- ==========================
-         แสดงข้อความ Error หากมี
-         ========================== -->
-    <% if (error) { %>
-        <p style="color:red;">
-            <%= error %> <!-- แสดงข้อความ error ที่ส่งมาจาก controller -->
-        </p>
-    <% } %>
+                <button type="submit" class="register-btn">Register</button>
+            </form>
+
+            <% if (error) { %>
+                <p class="error-message"><%= error %></p>
+            <% } %>
+        </div>
+    </main>
+
 </body>
 
 </html>

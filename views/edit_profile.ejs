@@ -1,60 +1,62 @@
-<!-- ==========================
-     edit_profile.ejs
-     ========================== -->
-
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="UTF-8">
-    <title>Edit Profile</title>
-
-    <!-- CSS -->
-    <link rel="stylesheet" href="/css/style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Profile - <%= user.User_Name %></title>
+    <link rel="stylesheet" href="/css/navbar.css">
+    <link rel="stylesheet" href="/css/edit_profile.css">
 </head>
 
 <body>
-    <div class="container">
-        <h2>Edit Profile</h2>
 
-        <!-- ==========================
-             ฟอร์มแก้ไขโปรไฟล์
-             ========================== -->
-        <form action="/user/edit/<%= user.User_id %>" method="POST" enctype="multipart/form-data">
+    <%- include('partials/navbar') %>
 
-            <!-- Username -->
-            <div class="form-group">
-                <label for="User_Name">Username:</label>
-                <input type="text" id="User_Name" name="User_Name" value="<%= user.User_Name %>" required>
-            </div>
+    <main class="edit-profile-main">
+        <div class="edit-profile-container">
+            <h2>Edit Profile</h2>
 
-            <!-- Email -->
-            <div class="form-group">
-                <label for="Email">Email:</label>
-                <input type="email" id="Email" name="Email" value="<%= user.Email %>" readonly>
-            </div>
+            <form action="/user/edit/<%= user.User_id %>" method="POST" enctype="multipart/form-data">
+                <div class="edit-profile-body">
+                    
+                    <!-- Left Section: Image Upload -->
+                    <div class="profile-image-section">
+                        <div class="avatar-preview">
+                            <% if (user.Profile_Image && user.Profile_Image.length > 0) { %>
+                                <% let lastImage = user.Profile_Image[user.Profile_Image.length - 1]; %>
+                                <img src="<%= lastImage.Path %>" alt="Current Profile Picture">
+                            <% } else { %>
+                                <img src="https://placehold.co/120x120/EFEFEF/AAAAAA?text=No+Image" alt="Default Profile Picture">
+                            <% } %>
+                        </div>
+                        <p>Upload a new photo</p>
+                        <input type="file" id="Profile_Image" name="Profile_Image" accept="image/*">
+                    </div>
 
-            <!-- Profile Image -->
-            <div class="form-group">
-                <label>Current Profile Image:</label><br>
-                <% if (user.Profile_Image && user.Profile_Image.length > 0) { %>
-                    <img src="<%= user.Profile_Image[0].Path %>" alt="Profile" width="100"><br>
-                <% } else { %>
-                    <p>No profile image uploaded.</p>
-                <% } %>
-                <label for="Profile_Image">Choose new profile image:</label>
-                <input type="file" id="Profile_Image" name="Profile_Image" accept="image/*">
-            </div>
+                    <!-- Right Section: Form Fields -->
+                    <div class="profile-form-section">
+                        <div class="form-group">
+                            <label for="User_Name">Username</label>
+                            <input type="text" id="User_Name" name="User_Name" value="<%= user.User_Name %>" required>
+                        </div>
+        
+                        <div class="form-group">
+                            <label for="Email">Email</label>
+                            <input type="email" id="Email" name="Email" value="<%= user.Email %>" readonly>
+                        </div>
+        
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                            <a href="/user/view/<%= user.User_id %>" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </div>
 
-            <!-- ปุ่มอัปเดตโปรไฟล์ -->
-            <button type="submit">Update Profile</button>
-        </form>
+                </div>
+            </form>
+        </div>
+    </main>
 
-        <!-- ฟอร์ม cancel กลับหน้า view -->
-        <form action="/user/view/<%= user.User_id %>" method="GET" style="display:inline;">
-            <button type="submit" class="btn">Cancel</button>
-        </form>
-    </div>
 </body>
 
 </html>
