@@ -50,24 +50,35 @@ const gameController = {
     // ==================================================
     getEditGamePage: async (req, res) => {
         try {
+            // --- ดึงข้อมูลผู้ใช้ที่ล็อกอินอยู่ ---
+            let user = null;
+            if (req.session && req.session.userId) {
+                user = await userModels.findByUserID(req.session.userId);
+            }
+
             const gameId = parseInt(req.params.id, 10);
 
             // หาเกมจาก DB
             const game = await gameModels.findGameById(gameId);
-            if (!game) return res.status(404).send("Game not found");
+            if (!game) {
+                return res.status(404).send("Game not found");
+            }
 
             // --- ดึงรูปภาพเกม ---
-            const images = await gameModels.findImagesByGameId(gameId); // [{id, url}, ...]
-            game.images = images.map(img => img.Path);
+            // แก้ไข: ส่งข้อมูลรูปภาพไปทั้ง object เพื่อให้เข้าถึง Image_ID และ Path ได้
+            game.images = await gameModels.findImagesByGameId(gameId);
 
             // --- ดึง Tags ของเกม ---
-            const tags = await gameModels.findTagsByGameId(gameId); // ["Action", "Puzzle", ...]
-            game.tags = tags;
+            game.tags = await gameModels.findTagsByGameId(gameId);
 
-            // ส่งไป render หน้าแก้ไขเกม
-            res.render('edit_game', { game });
+            // ส่งไป render หน้าแก้ไขเกม พร้อมข้อมูล game และ user
+            res.render('edit_game', {
+                game: game,
+                user: user // ส่งข้อมูลผู้ใช้ไปด้วย
+            });
+
         } catch (error) {
-            console.error("Error fetching game:", error);
+            console.error("Error fetching game for edit page:", error);
             res.status(500).send("Internal Server Error");
         }
     },

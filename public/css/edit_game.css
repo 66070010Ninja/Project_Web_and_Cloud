@@ -1,0 +1,235 @@
+/* === Navbar Position Fix (For this page only) === */
+.navbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1000;
+    box-sizing: border-box; 
+}
+/* === End of Fix === */
+
+
+/* General Body and Container */
+body {
+    background-color: #f4f6f9;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: #333;
+    margin: 0;
+    /* Adjusted padding to account for the fixed navbar */
+    padding-top: 80px; /* You might need to adjust this value to match your navbar's height */
+}
+
+.main-container {
+    max-width: 1000px;
+    margin: 30px auto;
+    padding: 20px 30px;
+    background-color: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* Form Header */
+.form-header h1 {
+    font-size: 2rem;
+    color: #2c3e50;
+    margin: 0 0 25px 0;
+    text-align: center;
+    border-bottom: 1px solid #e0e0e0;
+    padding-bottom: 15px;
+}
+
+/* Form Body Layout */
+.form-body {
+    display: flex;
+    gap: 40px;
+}
+
+.form-column {
+    flex: 1;
+}
+
+/* Form Groups and Controls */
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #555;
+    font-size: 0.9rem;
+}
+
+/* Style for current file info */
+.current-file-info {
+    display: block;
+    background-color: #ecf0f1;
+    border: 1px solid #bdc3c7;
+    border-radius: 4px;
+    padding: 8px 12px;
+    margin-bottom: 10px;
+    font-size: 0.9rem;
+    color: #2c3e50;
+    word-break: break-all; /* Ensure long filenames don't overflow */
+}
+
+.current-file-info strong {
+    font-weight: 600;
+    margin-right: 5px;
+}
+
+
+.form-control {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 1rem;
+    box-sizing: border-box; /* Important for padding */
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-control:focus {
+    border-color: #3498db;
+    box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+    outline: none;
+}
+
+textarea.form-control {
+    resize: vertical;
+    min-height: 80px;
+}
+
+/* Select2 Customization */
+.select2-container .select2-selection--multiple {
+    min-height: 42px;
+    border: 1px solid #ccc !important;
+    border-radius: 5px !important;
+}
+.select2-container--default .select2-selection--multiple .select2-selection__choice {
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 3px 6px;
+}
+.select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+    color: white;
+    margin-right: 5px;
+}
+.select2-container--default .select2-selection--multiple .select2-selection__choice__remove:hover {
+    color: #f1c40f;
+}
+
+/* Upload Box */
+.upload-box {
+    border: 2px dashed #bdc3c7;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.3s, background-color 0.3s;
+}
+.upload-box:hover, .upload-box.dragover {
+    border-color: #3498db;
+    background-color: #f8f9fa;
+}
+.upload-box .upload-content i {
+    font-size: 2.5rem;
+    color: #7f8c8d;
+    margin-bottom: 10px;
+}
+.upload-box .upload-content p {
+    margin: 0;
+    color: #7f8c8d;
+    font-weight: 500;
+}
+.file-input {
+    display: none;
+}
+
+/* Image Preview */
+.image-preview-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 15px;
+    min-height: 50px; /* Ensure container has height even when empty */
+}
+.image-preview-wrapper {
+    position: relative;
+    width: 100px;
+    height: 100px;
+}
+.image-preview {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 5px;
+    border: 1px solid #ddd;
+}
+.remove-img-btn {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: #e74c3c;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 22px;
+    height: 22px;
+    font-size: 14px;
+    line-height: 22px;
+    text-align: center;
+    cursor: pointer;
+    font-weight: bold;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+/* File Name Display */
+.file-name-display {
+    margin-top: 10px;
+    font-style: italic;
+    color: #27ae60;
+    display: none; /* Hidden by default */
+}
+
+/* Form Footer */
+.form-footer {
+    text-align: center;
+    padding-top: 20px;
+    margin-top: 20px;
+    border-top: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+}
+
+.btn {
+    padding: 12px 25px;
+    border: none;
+    border-radius: 5px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s;
+}
+.btn:hover {
+    transform: translateY(-2px);
+}
+.btn-primary {
+    background-color: #3498db;
+    color: white;
+}
+.btn-primary:hover {
+    background-color: #2980b9;
+}
+.btn-danger {
+    background-color: #e74c3c;
+    color: white;
+}
+.btn-danger:hover {
+    background-color: #c0392b;
+}
