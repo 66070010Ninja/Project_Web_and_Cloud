@@ -210,6 +210,7 @@ const gameController = {
     // ==================================================
     postUpdateGame: async (req, res) => {
         try {
+
             const gameId = parseInt(req.params.id, 10);
             if (isNaN(gameId)) return res.status(400).json({ error: "Invalid game ID" });
 
@@ -218,61 +219,88 @@ const gameController = {
 
             const { Game_Title, Description, Status_Game, Details } = req.body;
 
-            // --- 2) อัปเดต Tags ---
-            let tags = req.body.tags;
+            // ==========================
+            // STEP 1: จัดการรูปภาพ
+            // ==========================
+            let deleteImages = req.body['delete_images[]'] || [];
+            if (!Array.isArray(deleteImages)) deleteImages = [deleteImages];
+            deleteImages = deleteImages.map(id => parseInt(id, 10));
 
-            // ถ้า form ส่งมาเป็น undefined → []
-            // ถ้าเป็น string เดียว → แปลงเป็น array
+            const existingImages = await gameModels.findImagesByGameId(gameId);
+
+            // รูปเก่าหลังลบ
+            const remainingOldImages = existingImages.filter(
+                img => !deleteImages.includes(img.Game_Image_id)
+            );
+
+            // รูปใหม่
+            const newImages = req.files?.images ? (Array.isArray(req.files.images) ? req.files.images : [req.files.images]) : [];
+
+            // ตรวจสอบว่ามีรูปอย่างน้อย 1 รูป
+            if ((remainingOldImages.length + newImages.length) === 0) {
+                return res.status(400).json({ error: "ต้องมีรูปอย่างน้อย 1 รูป" });
+            }
+
+            // ลบรูปเก่า
+            for (let imgId of deleteImages) {
+                const img = await gameModels.findImageById(imgId);
+                if (img) {
+                    const imgPath = path.join(__dirname, "../public", img.Path);
+                    try { await fsPromises.unlink(imgPath); } catch (err) { }
+                    await gameModels.deleteImage(imgId);
+                }
+            }
+
+            // เพิ่มรูปใหม่
+            for (let img of newImages) {
+                const imageName = Date.now() + "_" + img.name;
+                const imagePath = path.join(__dirname, "../public/game/img", imageName);
+                await fsPromises.writeFile(imagePath, img.data);
+                await gameModels.createImage({ url: imageName, game_id: gameId });
+            }
+
+            // ==========================
+            // ✅ STEP 3: อัปเดต Tags
+            // ==========================
+            let tags = req.body.tags;
             if (!tags) tags = [];
             else if (!Array.isArray(tags)) tags = [tags];
 
-            const allTags = ["Action", "Adventure", "Card_Game", "Educational", "Fighting", "Interactive_Fiction", "Puzzle", "Racing", "Other"];
+            const allTags = [
+                "Action", "Adventure", "Card_Game", "Educational", "Fighting",
+                "Interactive_Fiction", "Puzzle", "Racing", "Other"
+            ];
             const tagsData = {};
             allTags.forEach(tag => {
                 tagsData[tag] = tags.includes(tag) ? 1 : 0;
             });
-
-            // Debug log เพื่อเช็คว่าค่า tagsData ถูกต้อง
-            console.log("Updating tags for game", gameId, tagsData);
-
             await gameModels.updateTags(gameId, tagsData);
 
-            // --- 3) จัดการรูปภาพ ---
-            const oldImages = req.body.oldImages || []; // รูปที่ยังเหลืออยู่
-            const currentImages = await gameModels.findImagesByGameId(gameId);
-
-            // ลบรูปที่ถูกลบออก
-            for (let img of currentImages) {
-                if (!oldImages.includes(img.Path)) {
-                    const imgPath = path.join(__dirname, "../public/game/img", img.Path);
-                    try { await fsPromises.unlink(imgPath); } catch (e) { /* ignore if file missing */ }
-                    await gameModels.deleteImage(img.Game_Image_id);
-                }
-            }
-
-            if (req.files?.images) {
-                const images = Array.isArray(req.files.images) ? req.files.images : [req.files.images];
-                for (let img of images) {
-                    const imageName = Date.now() + "_" + img.name;
-                    const imagePath = path.join(__dirname, "../public/game/img", imageName);
-                    await fsPromises.writeFile(imagePath, img.data);
-                    await gameModels.createImage({ url: imageName, game_id: gameId });
-                }
-            }
-
-            // --- อัปเดตไฟล์เกม ---
+            // ==========================
+            // ✅ STEP 5: อัปเดตไฟล์เกม (.zip)
+            // ==========================
             const updateData = { Game_Title, Description, Status_Game, Details };
 
             if (req.files?.file_game) {
                 const file_game = req.files.file_game;
-                if (!file_game.name.endsWith(".zip")) return res.status(400).json({ error: "ไฟล์เกมต้องเป็น .zip" });
+                if (!file_game.name.endsWith(".zip"))
+                    return res.status(400).json({ error: "ไฟล์เกมต้องเป็น .zip เท่านั้น" });
+
                 const gameFileName = Date.now() + "_" + file_game.name;
                 const gameFilePath = path.join(__dirname, "../public/game/file", gameFileName);
                 await fsPromises.writeFile(gameFilePath, file_game.data);
                 updateData.File_Game = gameFileName;
+
+                // ลบไฟล์เก่า
+                if (existingGame.File_Game) {
+                    const oldPath = path.join(__dirname, "../public/game/file", existingGame.File_Game);
+                    try { await fsPromises.unlink(oldPath); } catch { }
+                }
             }
 
-            // --- อัปเดตข้อมูลเกมทั้งหมด ---
+            // ==========================
+            // ✅ STEP 6: อัปเดตข้อมูลเกมหลัก
+            // ==========================
             await gameModels.updateGame(gameId, updateData);
 
             res.json({ message: "แก้ไขเกมสำเร็จ", game: { Game_id: gameId } });

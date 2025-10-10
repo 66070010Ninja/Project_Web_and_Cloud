@@ -188,6 +188,10 @@ textarea.form-control {
     box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
+.remove-img-btn:hover {
+    background: rgba(231, 76, 60, 0.85);
+}
+
 /* File Name Display */
 .file-name-display {
     margin-top: 10px;

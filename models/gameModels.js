@@ -156,6 +156,12 @@ const gameModels = {
         });
     },
 
+    findImageById: async (imageId) => {
+        return await prisma.game_image.findUnique({
+            where: { Game_Image_id: imageId }
+        });
+    },
+
     // ----------------------
     // ลบรูปภาพด้วย ID
     // ----------------------
