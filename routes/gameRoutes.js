@@ -38,6 +38,8 @@ router.get('/review/:id', gameController.getGameReview);
 // ดูรายละเอียดเกม
 router.get('/view/:id', gameController.getViewGamePage);
 
+router.post('/delete/:id', gameController.postDeleteGame);
+
 // --------------------------
 // Export Router
 // --------------------------

@@ -347,7 +347,40 @@ const gameController = {
             console.error("Error fetching reviews:", error);
             res.status(500).send("Internal Server Error");
         }
-    }
+    },
+
+    // ==========================
+    // ลบเกม (Soft Delete)
+    // ==========================
+    postDeleteGame: async (req, res) => {
+        try {
+            const gameId = parseInt(req.params.id, 10);
+            const userId = req.session.userId; // ดึง user จาก session
+
+            if (isNaN(gameId)) return res.status(400).send("Invalid Game ID");
+            if (!userId) return res.status(401).send("Unauthorized");
+
+            // ✅ ดึงข้อมูลเกมจาก model แทนที่จะใช้ prisma โดยตรง
+            const game = await gameModels.findGameById(gameId);
+            const gameImages = await gameModels.findImagesByGameId(gameId);
+
+            if (!game) return res.status(404).send("Game not found");
+
+            // ตรวจสอบว่าเป็นเจ้าของเกมหรือไม่
+            if (game.User_id !== userId) {
+                return res.status(403).send("Forbidden - You do not own this game");
+            }
+
+            // ✅ Soft delete (ตั้งค่า Soft_Delete = 0)
+            await gameModels.softDeleteGame(gameId);
+            res.json({ success: true });
+            res.redirect('/dashboard');
+        } catch (error) {
+            console.error("Error deleting game:", error);
+            res.status(500).send("Internal Server Error");
+        }
+    },
+
 };
 
 // --------------------------

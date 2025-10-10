@@ -165,7 +165,7 @@ const userController = {
     // ----------------------
     postEditProfile: async (req, res) => {
         try {
-            const userId = req.session.user?.id;
+            const userId = req.session.userId;
             if (!userId) return res.status(401).send("Unauthorized");
 
             const { User_Name } = req.body;

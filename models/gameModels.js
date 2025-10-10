@@ -128,6 +128,11 @@ const gameModels = {
     // ฟังก์ชันดึงเกมทั้งหมด
     getAllGames: async () => {
         return await prisma.games.findMany({
+            where: {
+                Soft_Delete: {
+                    not: 0
+                }
+            },
             include: { tags: true },   // ถ้าอยากดึง tags ด้วย
             orderBy: { Game_id: 'desc' } // เรียงจากล่าสุด
         });
@@ -137,7 +142,10 @@ const gameModels = {
         try {
             return await prisma.games.findMany({
                 where: {
-                    User_id: userId
+                    User_id: userId,
+                    Soft_Delete: {
+                        not: 0
+                    }
                 }
             });
         } catch (error) {
@@ -168,6 +176,13 @@ const gameModels = {
     deleteImage: async (imageId) => {
         return await prisma.game_image.delete({
             where: { Game_Image_id: imageId }
+        });
+    },
+
+    softDeleteGame: async (gameId) => {
+        return await prisma.games.update({
+            where: { Game_id: gameId },
+            data: { Soft_Delete: 0 },
         });
     },
 
