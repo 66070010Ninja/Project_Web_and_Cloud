@@ -117,8 +117,15 @@
         // --- Image Upload Logic (Drag and Drop) ---
         const imagesUploadBox = document.getElementById('imagesUploadBox');
         const imagesInput = document.getElementById('images_game');
+        let imageDialogOpen = false;
 
-        imagesUploadBox.addEventListener('click', () => imagesInput.click());
+        imagesUploadBox.addEventListener('click', () => {
+            if (imageDialogOpen) return;
+            imageDialogOpen = true;
+        });
+        imagesInput.addEventListener('click', () => {
+            imageDialogOpen = false;
+        });
         imagesUploadBox.addEventListener('dragover', (e) => {
             e.preventDefault();
             imagesUploadBox.classList.add('dragover');
@@ -170,8 +177,15 @@
         const fileUploadBox = document.getElementById('fileUploadBox');
         const fileInput = document.getElementById('file_game');
         const fileNameDiv = document.getElementById('fileName');
+        let fileDialogOpen = false;
         
-        fileUploadBox.addEventListener('click', () => fileInput.click());
+        fileUploadBox.addEventListener('click', () => {
+            if (fileDialogOpen) return;
+            fileDialogOpen = true;
+        });
+        fileInput.addEventListener('click', () => {
+            fileDialogOpen = false;
+        });
         fileUploadBox.addEventListener('dragover', (e) => {
             e.preventDefault();
             fileUploadBox.classList.add('dragover');
@@ -217,6 +231,7 @@
 
             selectedFiles.forEach(file => formData.append("images", file));
             formData.append("file_game", selectedGameFile);
+            selectedTags.forEach(tag => formData.append("tags[]", tag));
             
             fetch("/game/create", { method: "POST", body: formData })
                 .then(res => res.json())

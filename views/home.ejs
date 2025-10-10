@@ -67,7 +67,7 @@
                     <script>
                         document.addEventListener('DOMContentLoaded', () => {
                             const featuredGamesData = <%- JSON.stringify(featuredGames.map(g => ({
-                                id: g.Game_ID,
+                                id: g.Game_id,
                                 title: g.Game_Title,
                                 description: g.Description,
                                 images: (g.images && g.images.length > 0) ? g.images : [g.Game_Cover]
@@ -154,7 +154,7 @@
                     <div class="game-grid">
                         <% games.forEach(game => { %>
                             <div class="game-box">
-                                <a href="/game/view/<%= game.Game_ID %>" class="game-box-thumbnail">
+                                <a href="/game/view/<%= game.Game_id %>" class="game-box-thumbnail">
                                     <img src="<% if (game.images && game.images.length > 0) { %><%= game.images[0] %><% } else { %><%= game.Game_Cover %><% } %>" alt="<%= game.Game_Title %>">
                                 </a>
                                 <div class="game-box-info">

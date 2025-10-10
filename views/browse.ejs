@@ -63,7 +63,7 @@
                     <% if (games && games.length > 0) { %>
                         <% games.forEach(game => { %>
                             <div class="game-box">
-                                <a href="/game/view/<%= game.Game_ID %>" class="game-box-thumbnail">
+                                <a href="/game/view/<%= game.Game_id %>" class="game-box-thumbnail">
                                     <img src="<%= (game.images && game.images.length > 0) ? game.images[0] : '/path/to/default/image.jpg' %>" alt="<%= game.Game_Title %>">
                                 </a>
                                 <div class="game-box-info">

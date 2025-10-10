@@ -42,8 +42,8 @@
                 <div class="game-list-container">
                     <% games.forEach(game => { %>
                         <div class="game-list-item">
-                            <a href="/game/view/<%= game.Game_ID %>" class="game-list-image">
-                                <img src="<%= game.Game_Cover %>" alt="<%= game.Game_Title %> Cover">
+                            <a href="/game/view/<%= game.Game_id %>" class="game-list-image">
+                                <img src="<% if (game.images && game.images.length > 0) { %><%= game.images[0] %><% } else { %><%= game.Game_Cover %><% } %>" alt="<%= game.Game_Title %>" alt="<%= game.Game_Title %> Cover">
                             </a>
                             <div class="game-list-details">
                                 <h3 class="game-list-title"><%= game.Game_Title %></h3>
@@ -53,8 +53,8 @@
                                 </div>
                             </div>
                             <div class="game-list-actions">
-                                <a href="/game/edit/<%= game.Game_ID %>" class="btn btn-edit"><i class="fas fa-pencil-alt"></i> Edit</a>
-                                <form action="/game/delete/<%= game.Game_ID %>" method="POST" onsubmit="return confirm('Are you sure you want to delete this game?');">
+                                <a href="/game/edit/<%= game.Game_id %>" class="btn btn-edit"><i class="fas fa-pencil-alt"></i> Edit</a>
+                                <form action="/game/delete/<%= game.Game_id %>" method="POST" onsubmit="return confirm('Are you sure you want to delete this game?');">
                                     <button type="submit" class="btn btn-delete"><i class="fas fa-trash-alt"></i> Delete</button>
                                 </form>
                             </div>

@@ -6,6 +6,19 @@ const pageController = {
         try {
             // Fetch all games
             const games = await gameModels.getAllGames();
+            const gamesWithImages = await Promise.all(
+                games.map(async (game) => {
+                    const images = await gameModels.findImagesByGameId(game.Game_id);
+
+                    return {
+                        ...game,
+                        images: images.length > 0
+                            ? images.map(img => img.Path)  // ใช้ Path จาก model ที่ให้มา
+                            : [game.Game_Cover]            // fallback ถ้าไม่มีรูป
+                    };
+                })
+            );
+
 
             let user = null;
             // Check if a user ID exists in the session
@@ -16,7 +29,7 @@ const pageController = {
 
             // Render the home page, passing the games and the user (which will be null if not logged in)
             res.render('home', {
-                games,
+                games: gamesWithImages,
                 user
             });
         } catch (error) {
@@ -29,6 +42,18 @@ const pageController = {
         try {
             // Fetch all games
             const games = await gameModels.getAllGames();
+            const gamesWithImages = await Promise.all(
+                games.map(async (game) => {
+                    const images = await gameModels.findImagesByGameId(game.Game_id);
+
+                    return {
+                        ...game,
+                        images: images.length > 0
+                            ? images.map(img => img.Path)  // ใช้ Path จาก model ที่ให้มา
+                            : [game.Game_Cover]            // fallback ถ้าไม่มีรูป
+                    };
+                })
+            );
 
             let user = null;
             // Check if a user ID exists in the session
@@ -38,7 +63,7 @@ const pageController = {
             };
 
             res.render('browse', {
-                games,
+                games: gamesWithImages,
                 user
             });
         } catch (error) {
@@ -51,6 +76,18 @@ const pageController = {
         try {
             // Fetch all games
             const games = await gameModels.getAllGames();
+            const gamesWithImages = await Promise.all(
+                games.map(async (game) => {
+                    const images = await gameModels.findImagesByGameId(game.Game_id);
+
+                    return {
+                        ...game,
+                        images: images.length > 0
+                            ? images.map(img => img.Path)  // ใช้ Path จาก model ที่ให้มา
+                            : [game.Game_Cover]            // fallback ถ้าไม่มีรูป
+                    };
+                })
+            );
 
             let user = null;
             // Check if a user ID exists in the session
@@ -59,7 +96,7 @@ const pageController = {
                 user = await userModels.findByUserID(req.session.userId);
             };
             res.render('dashboard', {
-                games,
+                games: gamesWithImages,
                 user
             });
         } catch (error) {
