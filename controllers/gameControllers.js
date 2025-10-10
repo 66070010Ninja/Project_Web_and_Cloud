@@ -36,7 +36,7 @@ const gameController = {
             // Render หน้า create_game พร้อมส่งข้อมูล user และ error ไปด้วย
             res.render('create_game', {
                 user: user, // ส่งข้อมูลผู้ใช้ (จะเป็น null หากยังไม่ล็อกอิน)
-                error: null 
+                error: null
             });
 
         } catch (err) {
@@ -112,7 +112,7 @@ const gameController = {
                 ...c,
                 timeAgo: dayjs(c.Created_At).fromNow()
             }));
-            
+
             // --- ดึงข้อมูลนักพัฒนา, Tags ---
             game.developer = await userModels.findByUserID(game.User_id);
             game.tags = await gameModels.findTagsByGameId(gameId);
@@ -220,12 +220,20 @@ const gameController = {
 
             // --- 2) อัปเดต Tags ---
             let tags = req.body.tags;
+
+            // ถ้า form ส่งมาเป็น undefined → []
+            // ถ้าเป็น string เดียว → แปลงเป็น array
             if (!tags) tags = [];
             else if (!Array.isArray(tags)) tags = [tags];
 
-            const allTags = ["Action","Adventure","Card_Game","Educational","Fighting","Interactive_Fiction","Puzzle","Racing","Other"];
+            const allTags = ["Action", "Adventure", "Card_Game", "Educational", "Fighting", "Interactive_Fiction", "Puzzle", "Racing", "Other"];
             const tagsData = {};
-            allTags.forEach(tag => tagsData[tag] = tags.includes(tag) ? 1 : 0);
+            allTags.forEach(tag => {
+                tagsData[tag] = tags.includes(tag) ? 1 : 0;
+            });
+
+            // Debug log เพื่อเช็คว่าค่า tagsData ถูกต้อง
+            console.log("Updating tags for game", gameId, tagsData);
 
             await gameModels.updateTags(gameId, tagsData);
 
@@ -292,7 +300,7 @@ const gameController = {
                 comment
             });
 
-            res.send("Review added successfully!");
+            res.redirect(`/game/view/${gameId}`);
         } catch (error) {
             console.error("Error creating review:", error);
             res.status(500).send("Internal Server Error");

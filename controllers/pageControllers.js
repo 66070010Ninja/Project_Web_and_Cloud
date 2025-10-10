@@ -74,8 +74,14 @@ const pageController = {
 
     getDashboardPage: async (req, res) => {
         try {
+            if (!req.session || !req.session.userId) {
+                return res.redirect('/user/login'); // ถ้าไม่ล็อกอิน ให้ไปหน้า login
+            }
+
+            const userId = req.session.userId;
+
             // Fetch all games
-            const games = await gameModels.getAllGames();
+            const games = await gameModels.getGamesByUserId(userId);
             const gamesWithImages = await Promise.all(
                 games.map(async (game) => {
                     const images = await gameModels.findImagesByGameId(game.Game_id);
@@ -83,8 +89,8 @@ const pageController = {
                     return {
                         ...game,
                         images: images.length > 0
-                            ? images.map(img => img.Path)  // ใช้ Path จาก model ที่ให้มา
-                            : [game.Game_Cover]            // fallback ถ้าไม่มีรูป
+                            ? images.map(img => img.Path)
+                            : [game.Game_Cover]
                     };
                 })
             );

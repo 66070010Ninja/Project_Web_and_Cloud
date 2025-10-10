@@ -86,10 +86,19 @@ const gameModels = {
     // อัปเดต Tags ของเกม
     // ----------------------
     updateTags: async (gameId, tagsData) => {
-        return await prisma.tags.update({
-            where: { Game_id: gameId },
-            data: tagsData
-        });
+        try {
+            return await prisma.tags.upsert({
+                where: { Game_id: gameId },
+                update: tagsData,
+                create: {
+                    Game_id: gameId,
+                    ...tagsData
+                }
+            });
+        } catch (error) {
+            console.error("Error updating tags:", error);
+            throw error;
+        }
     },
 
     // ----------------------
@@ -122,6 +131,19 @@ const gameModels = {
             include: { tags: true },   // ถ้าอยากดึง tags ด้วย
             orderBy: { Game_id: 'desc' } // เรียงจากล่าสุด
         });
+    },
+
+    getGamesByUserId: async (userId) => {
+        try {
+            return await prisma.games.findMany({
+                where: {
+                    User_id: userId
+                }
+            });
+        } catch (error) {
+            console.error("Error fetching user's games:", error);
+            throw error;
+        }
     },
 
     // ----------------------
