@@ -356,6 +356,7 @@ const gameController = {
         try {
             const gameId = parseInt(req.params.id, 10);
             const userId = req.session.userId; // ดึง user จาก session
+            const from = req.query.from || 'dashboard';
 
             if (isNaN(gameId)) return res.status(400).send("Invalid Game ID");
             if (!userId) return res.status(401).send("Unauthorized");
@@ -373,8 +374,11 @@ const gameController = {
 
             // ✅ Soft delete (ตั้งค่า Soft_Delete = 0)
             await gameModels.softDeleteGame(gameId);
-            res.json({ success: true });
-            res.redirect('/dashboard');
+            if (from === 'edit') {
+                res.json({ success: true });
+            } else {
+                res.redirect('/dashboard');
+            }
         } catch (error) {
             console.error("Error deleting game:", error);
             res.status(500).send("Internal Server Error");

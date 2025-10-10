@@ -276,12 +276,12 @@
             // Delete Game Button
             document.getElementById('deleteGameBtn').addEventListener('click', function() {
                 if (confirm('Are you sure you want to delete this game? This action cannot be undone.')) {
-                    fetch(`/game/delete/${gameData.Game_id}`, { method: 'POST' })
+                    fetch(`/game/delete/${gameData.Game_id}?from=edit`, { method: 'POST' })
                         .then(res => res.json())
                         .then(data => {
                             if (data.success) {
                                 alert('Game deleted successfully.');
-                                window.location.href = '/dashboard'; // ✅ ไปหน้า dashboard
+                                window.location.href = '/dashboard';
                             } else {
                                 alert(`Error: ${data.error}`);
                             }

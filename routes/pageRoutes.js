@@ -6,5 +6,6 @@ const pageController = require('../controllers/pageControllers')
 router.get('/', pageController.getHomePage);
 router.get('/browse', pageController.getBrowsePage);
 router.get('/dashboard', pageController.getDashboardPage);
+router.get('/browse/search', pageController.searchGames);
 
 module.exports = router;
