@@ -11,6 +11,7 @@ const dayjs = require('dayjs');
 const relativeTime = require('dayjs/plugin/relativeTime');
 const path = require('path');
 const fs = require('fs');
+const fsPromises = fs.promises;
 
 // ขยายความสามารถให้ dayjs แปลงเวลาแบบ relative (xx days ago)
 dayjs.extend(relativeTime);
@@ -158,7 +159,7 @@ const gameController = {
                 return res.status(400).json({ error: "ต้องอัปโหลดรูปเกมอย่างน้อย 1 รูป" });
 
             // --- 4) อ่าน Tags ---
-            let tags = req.body['tags[]'];
+            let tags = req.body.tags;
             if (!tags) tags = [];
             else if (!Array.isArray(tags)) tags = [tags];
             // console.log("Tags:", tags);
@@ -212,27 +213,20 @@ const gameController = {
             const gameId = parseInt(req.params.id, 10);
             if (isNaN(gameId)) return res.status(400).json({ error: "Invalid game ID" });
 
+            const existingGame = await gameModels.findGameById(gameId);
+            if (!existingGame) return res.status(404).json({ error: "เกมไม่พบ" });
+
             const { Game_Title, Description, Status_Game, Details } = req.body;
 
-            // --- 1) อัปเดตข้อมูลเกม ---
-            await gameModels.updateGame(gameId, { Game_Title, Description, Status_Game, Details });
-
             // --- 2) อัปเดต Tags ---
-            let tags = req.body['tags[]'];
+            let tags = req.body.tags;
             if (!tags) tags = [];
             else if (!Array.isArray(tags)) tags = [tags];
 
-            const tagsData = {
-                Action: tags.includes("Action") ? 1 : 0,
-                Adventure: tags.includes("Adventure") ? 1 : 0,
-                Card_Game: tags.includes("Card_Game") ? 1 : 0,
-                Educational: tags.includes("Educational") ? 1 : 0,
-                Fighting: tags.includes("Fighting") ? 1 : 0,
-                Interactive_Fiction: tags.includes("Interactive_Fiction") ? 1 : 0,
-                Puzzle: tags.includes("Puzzle") ? 1 : 0,
-                Racing: tags.includes("Racing") ? 1 : 0,
-                Other: tags.includes("Other") ? 1 : 0
-            };
+            const allTags = ["Action","Adventure","Card_Game","Educational","Fighting","Interactive_Fiction","Puzzle","Racing","Other"];
+            const tagsData = {};
+            allTags.forEach(tag => tagsData[tag] = tags.includes(tag) ? 1 : 0);
+
             await gameModels.updateTags(gameId, tagsData);
 
             // --- 3) จัดการรูปภาพ ---
@@ -243,34 +237,35 @@ const gameController = {
             for (let img of currentImages) {
                 if (!oldImages.includes(img.Path)) {
                     const imgPath = path.join(__dirname, "../public/game/img", img.Path);
-                    if (fs.existsSync(imgPath)) fs.unlinkSync(imgPath);
+                    try { await fsPromises.unlink(imgPath); } catch (e) { /* ignore if file missing */ }
                     await gameModels.deleteImage(img.Game_Image_id);
                 }
             }
 
-            // เพิ่มรูปใหม่
-            if (req.files && req.files.images) {
+            if (req.files?.images) {
                 const images = Array.isArray(req.files.images) ? req.files.images : [req.files.images];
                 for (let img of images) {
                     const imageName = Date.now() + "_" + img.name;
                     const imagePath = path.join(__dirname, "../public/game/img", imageName);
-                    fs.writeFileSync(imagePath, img.data);
+                    await fsPromises.writeFile(imagePath, img.data);
                     await gameModels.createImage({ url: imageName, game_id: gameId });
                 }
             }
 
-            // --- 4) อัปเดตไฟล์เกมใหม่ (ถ้ามี) ---
-            if (req.files && req.files.file_game) {
+            // --- อัปเดตไฟล์เกม ---
+            const updateData = { Game_Title, Description, Status_Game, Details };
+
+            if (req.files?.file_game) {
                 const file_game = req.files.file_game;
-                if (!file_game.name.endsWith(".zip")) {
-                    return res.status(400).json({ error: "ไฟล์เกมต้องเป็น .zip" });
-                }
+                if (!file_game.name.endsWith(".zip")) return res.status(400).json({ error: "ไฟล์เกมต้องเป็น .zip" });
                 const gameFileName = Date.now() + "_" + file_game.name;
                 const gameFilePath = path.join(__dirname, "../public/game/file", gameFileName);
-                fs.writeFileSync(gameFilePath, file_game.data);
-
-                await gameModels.updateGame(gameId, { File_Game: gameFileName });
+                await fsPromises.writeFile(gameFilePath, file_game.data);
+                updateData.File_Game = gameFileName;
             }
+
+            // --- อัปเดตข้อมูลเกมทั้งหมด ---
+            await gameModels.updateGame(gameId, updateData);
 
             res.json({ message: "แก้ไขเกมสำเร็จ", game: { Game_id: gameId } });
 

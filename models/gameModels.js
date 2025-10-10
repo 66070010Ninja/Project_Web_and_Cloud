@@ -63,6 +63,9 @@ const gameModels = {
     // ค้นหาเกมด้วย ID
     // ----------------------
     findGameById: async (id) => {
+        const gameId = Number(id);
+        if (isNaN(gameId)) return null;
+
         return await prisma.games.findUnique({
             where: { Game_id: id },
             include: { tags: true } // รวมข้อมูล Tags มาด้วย
