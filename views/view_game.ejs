@@ -1,130 +1,148 @@
-<!-- ==========================
-     views/view_game.ejs
-     ========================== -->
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= game.Game_Title %> - Level Zero</title>
 
-    <!-- ==========================
-         CSS Libraries
-         ========================== -->
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-
-    <title><%= game.Game_Title %></title>
+    <!-- CSS -->
+    <link rel="stylesheet" href="/css/navbar.css">
+    <link rel="stylesheet" href="/css/view_game.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 </head>
-
 <body>
-    <a href="/" class="btn">Home</a>
-    <h2>View Game</h2>
+    <%- include('partials/navbar') %>
 
-    <!-- ==========================
-         Game Info (Read-Only)
-         ========================== -->
-    <h1><%= game.Game_Title %></h1>
-
-    <!-- ชื่อเกม -->
-    <label>Title:</label>
-    <input type="text" value="<%= game.Game_Title %>" readonly>
-    <br>
-
-    <!-- คำอธิบายเกม -->
-    <label>Description:</label>
-    <textarea readonly><%= game.Description %></textarea>
-    <br>
-
-    <!-- สถานะเกม -->
-    <label>Status:</label>
-    <select disabled>
-        <option value="Alpha" <%= game.Status_Game === "Alpha" ? "selected" : "" %>>Alpha</option>
-        <option value="Beta" <%= game.Status_Game === "Beta" ? "selected" : "" %>>Beta</option>
-        <option value="Released" <%= game.Status_Game === "Released" ? "selected" : "" %>>Released</option>
-    </select>
-    <br>
-
-    <!-- รายละเอียดเพิ่มเติม -->
-    <label>Details:</label>
-    <textarea readonly><%= game.Details %></textarea>
-    <br>
-
-    <!-- Tags -->
-    <label>Tags:</label>
-    <select id="tags" multiple="multiple" disabled>
-        <% const tagList = ["Action","Adventure","Card_Game","Educational","Fighting","Interactive_Fiction","Puzzle","Racing","Other"]; %>
-        <% tagList.forEach(tag => { %>
-            <option value="<%= tag %>" <%= game.tags?.[tag] === 1 ? "selected" : "" %>><%= tag.replace("_"," ") %></option>
-        <% }) %>
-    </select>
-    <br>
-
-    <!-- ==========================
-         Game Images
-         ========================== -->
-    <h3>Game Images</h3>
-    <div id="gameImages" style="display:flex; flex-wrap:wrap; gap:10px;">
-        <% if(game.images && game.images.length > 0){ %>
-            <% game.images.forEach(img => { %>
-                <div style="position:relative;">
-                    <img src="<%= img %>" width="150" style="border:1px solid #ccc; padding:2px;">
-                </div>
-            <% }) %>
-        <% } else { %>
-            <p>No images available.</p>
-        <% } %>
-    </div>
-    <br>
-
-    <!-- ==========================
-         Download Game File
-         ========================== -->
-    <h3>Download Game File</h3>
-    <% if(game.File_Game){ %>
-        <a href="/game/file/<%= game.File_Game %>" download>
-            <button type="button">Download Game (.zip)</button>
-        </a>
-    <% } else { %>
-        <p>No game file available.</p>
-    <% } %>
-    <br><br>
-
-    <!-- ==========================
-         Comments Section
-         ========================== -->
-    <h3>Comments</h3>
-
-    <!-- Post comment -->
-    <form action="/game/review/<%= game.Game_id %>" method="POST">
-        <textarea name="comment" placeholder="Write your comment..." required></textarea>
-        <br>
-        <button type="submit">Post Comment</button>
-    </form>
-
-    <!-- Display comments -->
-    <% reviews.forEach(r => { %>
-        <div class="comment" style="border-top:1px solid #ccc; padding:5px 0;">
-            <strong><%= r.account ? r.account.User_Name : 'Unknown User' %></strong>
-            <span style="color:gray; font-size:0.9em;"><%= r.timeAgo %></span>
-            <p><%= r.Comment %></p>
+    <!-- Hero Section -->
+    <header class="game-hero" style="background-image: url('<%= (game.images && game.images.length > 0) ? game.images[0] : '' %>');">
+        <div class="hero-overlay"></div>
+        <div class="hero-content">
+            <h1><%= game.Game_Title %></h1>
         </div>
-    <% }) %>
+    </header>
 
-    <!-- ==========================
-         JavaScript Libraries
-         ========================== -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <!-- Main Content -->
+    <div class="game-page-container">
+        <main class="left-column">
+            <!-- About Section -->
+            <section class="game-section">
+                <h2>Details</h2>
+                <div class="game-details">
+                    <p><%= game.Description %></p>
+                    <% if (game.Details) { %>
+                        <p><%= game.Details %></p>
+                    <% } %>
+                </div>
+            </section>
 
-    <!-- Initialize Select2 -->
-    <script>
-        $(document).ready(function () {
-            $('#tags').select2({
-                placeholder: "เลือก Tags",
-                allowClear: true,
-                tags: true
-            });
-        });
-    </script>
+            <!-- Download Section -->
+            <section class="game-section download-section">
+                <h2>Download</h2>
+                <% if (game.File_Game) { %>
+                    <a href="<%= game.File_Game %>" class="btn btn-primary" download>
+                        Download
+                    </a>
+                <% } else { %>
+                    <p>No download available.</p>
+                <% } %>
+            </section>
+
+            <!-- Comments Section -->
+            <section class="game-section">
+                <h2>Comments</h2>
+                <div class="comments-container">
+                    <% if (user) { %>
+                        <form action="/game/review/<%= game.Game_id %>" method="POST" class="comment-form">
+                            <textarea name="comment" placeholder="Write your comment..." required></textarea>
+                            <button type="submit" class="btn btn-secondary">Post Comment</button>
+                        </form>
+                    <% } else { %>
+                        <p><a href="/user/login">Log in</a> to post a comment.</p>
+                    <% } %>
+
+                    <div class="comment-list">
+                        <% reviews.forEach(r => { %>
+                            <div class="comment">
+                                <div class="comment-author">
+                                    <strong><%= r.account ? r.account.User_Name : 'Unknown User' %></strong>
+                                    <span class="comment-timestamp"><%= r.timeAgo %></span>
+                                </div>
+                                <p class="comment-body"><%= r.Comment %></p>
+                            </div>
+                        <% }) %>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <aside class="right-column">
+            <!-- Screenshots Section -->
+            <div class="game-section">
+                <div class="screenshot-gallery">
+                    <% if (game.images && game.images.length > 0) { %>
+                        <% game.images.slice(0, 3).forEach(image => { %>
+                            <a href="<%= image %>" target="_blank">
+                                <img src="<%= image %>" alt="Screenshot of <%= game.Game_Title %>">
+                            </a>
+                        <% }) %>
+                    <% } else { %>
+                        <a href="#" class="screenshot-placeholder">
+                            <i class="fas fa-image"></i>
+                        </a>
+                        <a href="#" class="screenshot-placeholder">
+                            <i class="fas fa-image"></i>
+                        </a>
+                        <a href="#" class="screenshot-placeholder">
+                            <i class="fas fa-image"></i>
+                        </a>
+                    <% } %>
+                </div>
+            </div>
+
+            <!-- Info Card -->
+            <div class="info-card">
+                <div class="info-item">
+                    <strong>Developer</strong>
+                    <span><%= game.developer.User_Name %></span>
+                </div>
+                <div class="info-item">
+                    <strong>Release Status</strong>
+                    <span class="status-tag"><%= game.Status_Game %></span>
+                </div>
+                 <div class="info-item">
+                    <strong>Tags</strong>
+                    <div class="tags-container">
+                         <% if (game.tags && game.tags.length > 0) { %>
+                            <% game.tags.forEach(tag => { %>
+                                <span class="game-tag"><%= tag %></span>
+                            <% }) %>
+                        <% } else { %>
+                            <span>No tags.</span>
+                        <% } %>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats Card -->
+             <div class="info-card stats-card">
+                 <div class="stat-item">
+                     <i class="fas fa-eye"></i>
+                     <span><%= game.views || 0 %> Views</span>
+                 </div>
+                 <div class="stat-item">
+                     <i class="fas fa-download"></i>
+                     <span><%= game.downloads || 0 %> Downloads</span>
+                 </div>
+                 <div class="stat-item">
+                     <i class="fas fa-thumbs-up"></i>
+                     <span><%= game.likes || 0 %> Likes</span>
+                 </div>
+             </div>
+        </aside>
+    </div>
+
+    <footer class="footer">
+        <p>&copy; 2025 Level Zero. All Rights Reserved.</p>
+    </footer>
 </body>
 </html>

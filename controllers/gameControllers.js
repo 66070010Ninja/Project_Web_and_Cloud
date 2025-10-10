@@ -88,27 +88,42 @@ const gameController = {
     // ==================================================
     getViewGamePage: async (req, res) => {
         try {
+            // --- ดึงข้อมูลผู้ใช้ที่ล็อกอินอยู่ ---
+            let user = null;
+            if (req.session && req.session.userId) {
+                user = await userModels.findByUserID(req.session.userId);
+            }
+
             const gameId = parseInt(req.params.id, 10);
 
             // หาเกม
             const game = await gameModels.findGameById(gameId);
-            if (!game) return res.status(404).send("Game not found");
+            if (!game) {
+                return res.status(404).send("Game not found");
+            }
 
-            // --- ดึงรูปภาพของเกม ---
-            const images = await gameModels.findImagesByGameId(gameId); // [{Game_Image_id, Path}]
+            // --- ดึงข้อมูลอื่นๆ ที่เกี่ยวข้องกับเกม ---
+            const images = await gameModels.findImagesByGameId(gameId);
             game.images = images.map(img => img.Path);
 
-            // --- ดึงรีวิวของเกม ---
             const comments = await gameModels.findReviewsByGameId(gameId);
-
-            // เพิ่ม field timeAgo (xx days ago)
             const commentsWithTimeAgo = comments.map(c => ({
                 ...c,
                 timeAgo: dayjs(c.Created_At).fromNow()
             }));
+            
+            // --- ดึงข้อมูลนักพัฒนา, Tags ---
+            game.developer = await userModels.findByUserID(game.User_id);
+            game.tags = await gameModels.findTagsByGameId(gameId);
 
-            // Render หน้า view_game
-            res.render('view_game', { game, reviews: commentsWithTimeAgo });
+
+            // Render หน้า view_game พร้อมส่งข้อมูลทั้งหมด
+            res.render('view_game', {
+                game: game,
+                reviews: commentsWithTimeAgo,
+                user: user // ส่งข้อมูลผู้ใช้ไปด้วย
+            });
+
         } catch (error) {
             console.error("Error fetching game:", error);
             res.status(500).send("Internal Server Error");
