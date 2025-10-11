@@ -1,33 +1,56 @@
+// ==========================
+// pageController.js
+// ==========================
+
+// --------------------------
+// Import Dependencies
+// --------------------------
 const gameModels = require('../models/gameModels');
 const userModels = require('../models/userModels');
 
+// --------------------------
+// Helper Function
+// --------------------------
+/**
+ * ดึงข้อมูลภาพของแต่ละเกม
+ * ถ้ามีหลายภาพ → รวมไว้ใน array
+ * ถ้าไม่มี → ใช้ Game_Cover เป็น fallback
+ */
+const attachGameImages = async (games) => {
+    return Promise.all(
+        games.map(async (game) => {
+            const images = await gameModels.findImagesByGameId(game.Game_id);
+            return {
+                ...game,
+                images: images.length > 0
+                    ? images.map(img => img.Path)
+                    : [game.Game_Cover]
+            };
+        })
+    );
+};
+
+// --------------------------
+// Controller Functions
+// --------------------------
 const pageController = {
+
+    // ==========================
+    // 1️⃣ หน้าแรก (Home)
+    // ==========================
     getHomePage: async (req, res) => {
         try {
-            // Fetch all games
+            // ดึงเกมทั้งหมด
             const games = await gameModels.getAllGames();
-            const gamesWithImages = await Promise.all(
-                games.map(async (game) => {
-                    const images = await gameModels.findImagesByGameId(game.Game_id);
+            const gamesWithImages = await attachGameImages(games);
 
-                    return {
-                        ...game,
-                        images: images.length > 0
-                            ? images.map(img => img.Path)  // ใช้ Path จาก model ที่ให้มา
-                            : [game.Game_Cover]            // fallback ถ้าไม่มีรูป
-                    };
-                })
-            );
-
-
+            // ดึงข้อมูลผู้ใช้ถ้ามี session
             let user = null;
-            // Check if a user ID exists in the session
-            if (req.session && req.session.userId) {
-                // If it exists, fetch the user's data
+            if (req.session?.userId) {
                 user = await userModels.findByUserID(req.session.userId);
-            };
+            }
 
-            // Render the home page, passing the games and the user (which will be null if not logged in)
+            // แสดงหน้า home.ejs
             res.render('home', {
                 games: gamesWithImages,
                 user
@@ -38,127 +61,106 @@ const pageController = {
         }
     },
 
+    // ==========================
+    // 2️⃣ หน้า Browse (สำหรับดูเกมทั้งหมด + ตัวกรอง)
+    // ==========================
     getBrowsePage: async (req, res) => {
         try {
             const games = await gameModels.getAllGames();
-            const gamesWithImages = await Promise.all(
-                games.map(async (game) => {
-                    const images = await gameModels.findImagesByGameId(game.Game_id);
-                    return {
-                        ...game,
-                        images: images.length > 0 ? images.map(img => img.Path) : [game.Game_Cover]
-                    };
-                })
-            );
+            const gamesWithImages = await attachGameImages(games);
 
+            // ดึงข้อมูลผู้ใช้ถ้ามี session
             let user = null;
-            if (req.session && req.session.userId) {
+            if (req.session?.userId) {
                 user = await userModels.findByUserID(req.session.userId);
             }
 
-            // 🔹 ส่งค่า default เพื่อป้องกัน ReferenceError
+            // ส่งค่า default เพื่อป้องกัน ReferenceError ตอน render
             res.render('browse', {
                 games: gamesWithImages,
                 user,
-                selectedTags: [],   // array ว่าง
-                query: '',          // string ว่าง
-                sortOrder: 'newest' // default sort
+                selectedTags: [],   // ค่าเริ่มต้น
+                query: '',          // คำค้นหาเริ่มต้น
+                sortOrder: 'newest' // การเรียงลำดับเริ่มต้น
             });
-
         } catch (error) {
-            console.log("Error fetching data for browse page:", error);
+            console.error("Error fetching data for browse page:", error);
             res.status(500).send("Internal Server Error");
-        };
+        }
     },
 
+    // ==========================
+    // 3️⃣ หน้า Dashboard (เฉพาะผู้ใช้ที่ล็อกอิน)
+    // ==========================
     getDashboardPage: async (req, res) => {
         try {
-            if (!req.session || !req.session.userId) {
-                return res.redirect('/user/login'); // ถ้าไม่ล็อกอิน ให้ไปหน้า login
+            // ถ้าไม่มี session → redirect ไป login
+            if (!req.session?.userId) {
+                return res.redirect('/user/login');
             }
 
             const userId = req.session.userId;
 
-            // Fetch all games
+            // ดึงเกมของผู้ใช้คนนั้น
             const games = await gameModels.getGamesByUserId(userId);
-            const gamesWithImages = await Promise.all(
-                games.map(async (game) => {
-                    const images = await gameModels.findImagesByGameId(game.Game_id);
+            const gamesWithImages = await attachGameImages(games);
 
-                    return {
-                        ...game,
-                        images: images.length > 0
-                            ? images.map(img => img.Path)
-                            : [game.Game_Cover]
-                    };
-                })
-            );
+            // ดึงข้อมูลผู้ใช้
+            const user = await userModels.findByUserID(userId);
 
-            let user = null;
-            // Check if a user ID exists in the session
-            if (req.session && req.session.userId) {
-                // If it exists, fetch the user's data
-                user = await userModels.findByUserID(req.session.userId);
-            };
+            // แสดงหน้า dashboard.ejs
             res.render('dashboard', {
                 games: gamesWithImages,
                 user
             });
         } catch (error) {
-            console.log("Error fetching data for dashboard page:", error);
+            console.error("Error fetching data for dashboard page:", error);
             res.status(500).send("Internal Server Error");
-        };
+        }
     },
 
+    // ==========================
+    // 4️⃣ ระบบค้นหาเกม (ใช้ใน Browse)
+    // ==========================
     searchGames: async (req, res) => {
         try {
-            try {
-                // 1. รับค่าจาก URL
-                const { query, tags, sortOrder } = req.query;
+            // 1. รับค่าพารามิเตอร์จาก URL
+            const { query, tags, sortOrder } = req.query;
 
-                // แปลง tags ที่เป็น string (เช่น "Action,Card Game") เป็น array
-                // และกำจัดช่องว่างหัวท้าย
-                const tagArray = tags
-                    ? tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0)
-                    : [];
+            // 2. แปลง tags จาก string → array
+            const tagArray = tags
+                ? tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0)
+                : [];
 
-                const currentSortOrder = sortOrder || 'newest';
+            const currentSortOrder = sortOrder || 'newest';
 
-                // 2. ดึงเกมที่ถูกกรองและเรียงลำดับด้วยฟังก์ชันใหม่
-                //    เราใช้ gameModels.getFilteredGames() แทนการดึงทั้งหมดแล้วมากรองทีหลัง
-                const filteredGames = await gameModels.getFilteredGames(query, tagArray, currentSortOrder);
+            // 3. ดึงเกมที่ตรงกับเงื่อนไขจากฐานข้อมูล
+            const filteredGames = await gameModels.getFilteredGames(query, tagArray, currentSortOrder);
 
+            // 4. แนบข้อมูลภาพของแต่ละเกม
+            const gamesWithImages = await attachGameImages(filteredGames);
 
-                // 3. ดึง images ของแต่ละเกม (เหมือนเดิม)
-                const gamesWithImages = await Promise.all(
-                    filteredGames.map(async (game) => {
-                        const images = await gameModels.findImagesByGameId(game.Game_id);
-                        return {
-                            ...game,
-                            images: images.length > 0 ? images.map(img => img.Path) : [game.Game_Cover]
-                        };
-                    })
-                );
+            // 5. ดึงข้อมูลผู้ใช้ (ถ้ามี)
+            const user = req.session.userId
+                ? await userModels.findByUserID(req.session.userId)
+                : null;
 
-                // 4. ส่งข้อมูลไปยังหน้า 'browse'
-                res.render('browse', {
-                    games: gamesWithImages,
-                    user: req.session.userId ? await userModels.findByUserID(req.session.userId) : null,
-                    selectedTags: tagArray, // ส่ง tags ที่ถูกเลือกกลับไปแสดงในช่องกรอง
-                    query: query || '',
-                    sortOrder: currentSortOrder
-                });
-
-            } catch (error) {
-                console.error("Error searching games:", error);
-                res.status(500).send("Internal Server Error");
-            };
-
+            // 6. แสดงผลในหน้า browse.ejs พร้อมค่าที่ค้นหา
+            res.render('browse', {
+                games: gamesWithImages,
+                user,
+                selectedTags: tagArray,
+                query: query || '',
+                sortOrder: currentSortOrder
+            });
         } catch (error) {
             console.error("Error searching games:", error);
             res.status(500).send("Internal Server Error");
-        };
+        }
     },
 };
 
+// --------------------------
+// Export Controller
+// --------------------------
 module.exports = pageController;

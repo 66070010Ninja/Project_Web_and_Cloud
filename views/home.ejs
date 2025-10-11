@@ -182,5 +182,26 @@
         <p>&copy; 2025 Level Zero. All Rights Reserved.</p>
     </footer>
 
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            
+            // ดักจับการคลิกบนลิงก์ Popular Tags ทั้งหมด
+            $('.tag-list a').on('click', function(e) {
+                e.preventDefault(); // หยุดไม่ให้ลิงก์ทำงานตามปกติ (/tags/action)
+                
+                // 1. ดึงชื่อ Tag จากข้อความในลิงก์ (เช่น "Action")
+                const tagName = $(this).text().trim();
+                
+                // 2. สร้าง URL สำหรับการค้นหาในหน้า Browse
+                // เราจะส่ง Tag ไปใน query parameter ชื่อ 'tags'
+                const searchUrl = `/browse/search?tags=${encodeURIComponent(tagName)}&sortOrder=newest`;
+                
+                // 3. นำทางผู้ใช้ไปยัง URL ค้นหา
+                window.location.href = searchUrl;
+            });
+        });
+    </script>
+
 </body>
 </html>
