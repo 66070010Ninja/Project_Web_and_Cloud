@@ -17,33 +17,49 @@
     <main class="login-main">
         <div class="login-container">
             <h2>Log in to your account</h2>
+            
+            <% 
+                // 💡 ใช้ข้อความ error จาก Controller หรือ flash message (res.locals.errorMessage)
+                const displayError = (typeof error !== 'undefined' && error) 
+                                     ? error 
+                                     : (typeof errorMessage !== 'undefined' ? errorMessage : null); 
+            %>
 
+            <% if (displayError && displayError.length > 0) { %>
+                <% 
+                    const messages = Array.isArray(displayError) ? displayError : [displayError];
+                    messages.forEach(msg => { %>
+                        <p class="error-message flash-error"><%= msg %></p>
+                <% }); %>
+            <% } %>
+            
             <form action="/user/login" method="post">
                 <div class="form-group">
                     <label for="username">Username</label>
                     <input type="text" 
-                           id="username" 
-                           name="username" 
-                           placeholder="Enter your username"
-                           value="<%= formData ? formData.username : '' %>" 
-                           required>
+                                id="username" 
+                                name="username" 
+                                placeholder="Enter your username"
+                                value="<%= formData && formData.username ? formData.username : '' %>" 
+                                required>
                 </div>
 
                 <div class="form-group">
                     <label for="password">Password</label>
                     <input type="password" 
-                           id="password" 
-                           name="password" 
-                           placeholder="Enter your password"
-                           required>
+                                id="password" 
+                                name="password" 
+                                placeholder="Enter your password"
+                                required>
                 </div>
 
                 <button type="submit" class="login-btn">Login</button>
             </form>
+            
+            <p class="register-prompt">
+                Don't have an account? <a href="/user/register">Sign Up</a>
+            </p>
 
-            <% if (error) { %>
-                <p class="error-message"><%= error %></p>
-            <% } %>
         </div>
     </main>
 

@@ -45,10 +45,7 @@ const pageController = {
             const gamesWithImages = await attachGameImages(games);
 
             // ดึงข้อมูลผู้ใช้ถ้ามี session
-            let user = null;
-            if (req.session?.userId) {
-                user = await userModels.findByUserID(req.session.userId);
-            }
+            const user = req.user || null;
 
             // แสดงหน้า home.ejs
             res.render('home', {
@@ -70,10 +67,7 @@ const pageController = {
             const gamesWithImages = await attachGameImages(games);
 
             // ดึงข้อมูลผู้ใช้ถ้ามี session
-            let user = null;
-            if (req.session?.userId) {
-                user = await userModels.findByUserID(req.session.userId);
-            }
+            const user = req.user || null;
 
             // ส่งค่า default เพื่อป้องกัน ReferenceError ตอน render
             res.render('browse', {
@@ -95,18 +89,17 @@ const pageController = {
     getDashboardPage: async (req, res) => {
         try {
             // ถ้าไม่มี session → redirect ไป login
-            if (!req.session?.userId) {
+            if (!req.user) {
                 return res.redirect('/user/login');
             }
 
-            const userId = req.session.userId;
+            const userId = req.user.User_id;
 
             // ดึงเกมของผู้ใช้คนนั้น
             const games = await gameModels.getGamesByUserId(userId);
             const gamesWithImages = await attachGameImages(games);
 
-            // ดึงข้อมูลผู้ใช้
-            const user = await userModels.findByUserID(userId);
+            const user = req.user;
 
             // แสดงหน้า dashboard.ejs
             res.render('dashboard', {
@@ -141,9 +134,7 @@ const pageController = {
             const gamesWithImages = await attachGameImages(filteredGames);
 
             // 5. ดึงข้อมูลผู้ใช้ (ถ้ามี)
-            const user = req.session.userId
-                ? await userModels.findByUserID(req.session.userId)
-                : null;
+            const user = req.user || null;
 
             // 6. แสดงผลในหน้า browse.ejs พร้อมค่าที่ค้นหา
             res.render('browse', {

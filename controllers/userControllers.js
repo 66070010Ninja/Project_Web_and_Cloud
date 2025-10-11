@@ -39,7 +39,8 @@ const userController = {
     getViewPage: async (req, res) => {
         try {
             const userId = parseInt(req.params.id, 10);
-            const user = await userModels.findByUserID(userId);
+            // โค้ดนี้ถูกต้องแล้ว: ดึงข้อมูลเต็มสำหรับหน้า View
+            const user = await userModels.findByUserID(userId); 
 
             if (!user) return res.status(404).send("User not found");
 
@@ -87,8 +88,23 @@ const userController = {
                 });
             }
 
-            // ✅ เก็บ userId ไว้ใน session
-            req.session.userId = user.User_id;
+            // ✅ ส่วนที่แก้ไข: ดึงข้อมูลผู้ใช้แบบเต็มรวม Profile_Image
+            const fullUser = await userModels.findByUserID(user.User_id);
+
+            // ✅ เก็บข้อมูลเต็มลงใน session
+            if (!fullUser) { 
+                // Fallback: ถ้าดึงข้อมูลเต็มไม่ได้ ให้ใช้ข้อมูลย่อที่มี Roles
+                req.session.user = {
+                    User_id: user.User_id,
+                    User_Name: user.User_Name,
+                    Roles: user.Roles
+                };
+            } else {
+                // ✅ ใช้ fullUser ซึ่งรวม Profile_Image
+                req.session.user = fullUser;
+            }
+
+            req.flash('success', `Welcome back, ${user.User_Name}!`);
 
             // ไปหน้าแรก
             res.redirect('/');
@@ -160,9 +176,11 @@ const userController = {
      */
     getEditProfilePage: async (req, res) => {
         try {
-            const userId = req.session.userId;
+            // ใช้ req.user ที่กำหนดใน Global Middleware แล้ว (แต่ใช้ req.session.user ก็ยังใช้งานได้)
+            const userId = req.session.user ? req.session.user.User_id : null; 
             if (!userId) return res.redirect('/user/login');
 
+            // ดึงข้อมูลเต็มเพื่อนำไปแสดงในฟอร์มแก้ไข
             const user = await userModels.findByUserID(userId);
             if (!user) return res.status(404).send("User not found");
 
@@ -178,13 +196,15 @@ const userController = {
      */
     postEditProfile: async (req, res) => {
         try {
-            const userId = req.session.userId;
+            const userId = req.session.user ? req.session.user.User_id : null;
             if (!userId) return res.status(401).send("Unauthorized");
 
             const { User_Name } = req.body;
 
             // อัปเดตชื่อผู้ใช้
             await userModels.updateUser(userId, { User_Name });
+            
+            let updatedUser = null; // ตัวแปรสำหรับเก็บข้อมูลผู้ใช้ล่าสุด
 
             // ถ้ามีไฟล์อัปโหลด → บันทึกลงโฟลเดอร์
             if (req.files && req.files.Profile_Image) {
@@ -202,8 +222,26 @@ const userController = {
 
                 // เก็บ path ของภาพลง DB
                 const profileImagePath = `/user/img/${filename}`;
+
+                // ✅ 1. เพิ่มรูปโปรไฟล์เข้า DB ก่อน
                 await userModels.addProfileImage(userId, profileImagePath);
+
+                // ✅ 2. ดึงข้อมูลผู้ใช้แบบเต็มล่าสุด (รวม Profile_Image ใหม่)
+                updatedUser = await userModels.findByUserID(userId);
+
+                req.flash('success', 'Profile and image updated successfully!');
+
+            } else {
+                // ✅ กรณีอัปเดตแค่ชื่อผู้ใช้: ดึงข้อมูลล่าสุดเพื่ออัปเดต session
+                updatedUser = await userModels.findByUserID(userId);
+                req.flash('success', 'Profile name updated successfully!');
             }
+            
+            // ✅ บันทึกข้อมูลผู้ใช้แบบเต็มลงใน Session (ไม่ว่าจะเปลี่ยนรูปหรือไม่ก็ตาม)
+            if (updatedUser) {
+                req.session.user = updatedUser;
+            }
+
 
             // กลับไปหน้าโปรไฟล์ของตัวเอง
             res.redirect(`/user/view/${userId}`);
@@ -218,10 +256,11 @@ const userController = {
      */
     getProfile: async (req, res) => {
         try {
-            const userId = req.session.userId; // ✅ แก้จาก req.session.user.id → userId
+            const userId = req.session.user ? req.session.user.User_id : null;
             if (!userId) return res.redirect('/user/login');
 
-            const user = await userModels.findByUserID(userId);
+            // ดึงข้อมูลเต็ม (userModels.findByUserID มี include: { Profile_Image: true } อยู่แล้ว)
+            const user = await userModels.findByUserID(userId); 
             if (!user) return res.status(404).send("User not found");
 
             res.render('view_profile', { user });
