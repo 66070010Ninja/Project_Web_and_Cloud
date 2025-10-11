@@ -8,6 +8,14 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
+const mapTagToPrismaField = (tag) => {
+    // การจัดการพิเศษสำหรับชื่อที่มีช่องว่าง
+    if (tag === 'Card Game') return 'Card_Game';
+    if (tag === 'Interactive Fiction') return 'Interactive_Fiction';
+    // สำหรับชื่ออื่น ๆ ที่ไม่มีช่องว่าง
+    return tag.replace(/ /g, '_');
+};
+
 // --------------------------
 // Game Models
 // --------------------------
@@ -200,6 +208,77 @@ const gameModels = {
             if (tagRecord[key] === 1) tagNames.push(key);
         }
         return tagNames;
+    },
+
+    getFilteredGames: async (query, tagArray, sortOrder = 'newest') => {
+        // 1. เตรียมเงื่อนไข WHERE สำหรับ Tags
+        let tagConditions = {};
+        if (tagArray && tagArray.length > 0) {
+            // เงื่อนไข: ต้องมี Game_id ที่มี Tags ครบตามที่ระบุ
+            // เราจะหา Game_id ที่ตรงกับเงื่อนไข Tags ทั้งหมด
+            const andConditions = tagArray.map(tag => {
+                const field = mapTagToPrismaField(tag);
+                return {
+                    [field]: 1 // ต้องมีค่าเป็น 1
+                };
+            });
+
+            // ดึง Tags ทั้งหมดที่ตรงตามเงื่อนไข
+            const matchingTags = await prisma.tags.findMany({
+                where: {
+                    AND: andConditions
+                },
+                select: { Game_id: true }
+            });
+
+            // ดึงเฉพาะ Game_id ออกมาเป็น Array
+            const matchingGameIds = matchingTags.map(tag => tag.Game_id);
+
+            // ถ้าไม่มี Game_id ที่ตรงเลย ให้ส่งเงื่อนไขที่ไม่มีทางเป็นจริงเพื่อไม่ให้ดึงเกมใด ๆ
+            if (matchingGameIds.length === 0) {
+                return [];
+            }
+
+            // ใช้ Game_id ที่ตรงกับ Tags เป็นเงื่อนไขหลักในการค้นหาเกม
+            tagConditions = {
+                Game_id: {
+                    in: matchingGameIds
+                }
+            };
+        }
+
+        // 2. เตรียมเงื่อนไข WHERE สำหรับคำค้นหา (Query)
+        let queryConditions = {};
+        if (query) {
+            queryConditions = {
+                OR: [
+                    { Game_Title: { contains: query } },
+                    { Description: { contains: query } },
+                ]
+            };
+        }
+
+        // 3. เตรียมเงื่อนไข ORDER BY (เรียงลำดับ)
+        let orderBy = { Game_id: 'desc' }; // default: newest
+        if (sortOrder === 'most_downloaded') {
+            orderBy = { Download: 'desc' };
+        } else if (sortOrder === 'most_liked') {
+            // สมมติว่าคุณมีคอลัมน์ Like หรือ Rating ที่ใช้แทน Like ได้
+            // แต่จาก schema.prisma ที่ให้มา ไม่มีคอลัมน์ Like/Rating โดยตรง
+            // ให้คงไว้เป็น Game_id: 'desc' ไปก่อน หรือถ้ามีฟังก์ชัน Like/Rating แยก ให้ใช้คอลัมน์นั้น
+            orderBy = { Game_id: 'desc' }; // 
+        }
+
+        // 4. ดึงข้อมูลเกม
+        return await prisma.games.findMany({
+            where: {
+                ...tagConditions, // เงื่อนไขจาก Tags
+                ...queryConditions, // เงื่อนไขจาก Query
+                Soft_Delete: { not: 0 } // ไม่รวมเกมที่ถูกลบแบบ Soft Delete
+            },
+            include: { tags: true },
+            orderBy: orderBy
+        });
     },
 
 };

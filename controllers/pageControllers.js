@@ -112,47 +112,47 @@ const pageController = {
 
     searchGames: async (req, res) => {
         try {
-            const { query, tags } = req.query;
-            const tagArray = tags ? tags.split(',') : [];
+            try {
+                // 1. รับค่าจาก URL
+                const { query, tags, sortOrder } = req.query;
 
-            let allGames = await gameModels.getAllGames();
+                // แปลง tags ที่เป็น string (เช่น "Action,Card Game") เป็น array
+                // และกำจัดช่องว่างหัวท้าย
+                const tagArray = tags
+                    ? tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0)
+                    : [];
 
-            // Filter by query
-            if (query) {
-                allGames = allGames.filter(game =>
-                    game.Game_Title.toLowerCase().includes(query.toLowerCase()) ||
-                    (game.Description && game.Description.toLowerCase().includes(query.toLowerCase()))
+                const currentSortOrder = sortOrder || 'newest';
+
+                // 2. ดึงเกมที่ถูกกรองและเรียงลำดับด้วยฟังก์ชันใหม่
+                //    เราใช้ gameModels.getFilteredGames() แทนการดึงทั้งหมดแล้วมากรองทีหลัง
+                const filteredGames = await gameModels.getFilteredGames(query, tagArray, currentSortOrder);
+
+
+                // 3. ดึง images ของแต่ละเกม (เหมือนเดิม)
+                const gamesWithImages = await Promise.all(
+                    filteredGames.map(async (game) => {
+                        const images = await gameModels.findImagesByGameId(game.Game_id);
+                        return {
+                            ...game,
+                            images: images.length > 0 ? images.map(img => img.Path) : [game.Game_Cover]
+                        };
+                    })
                 );
-            }
 
-            // Filter by tags
-            if (tagArray.length > 0) {
-                allGames = allGames.filter(game => {
-                    const gameTags = game.tags
-                        ? Object.keys(game.tags).filter(t => t !== "Game_id" && game.tags[t] === 1)
-                        : [];
-                    return tagArray.every(tag => gameTags.includes(tag));
+                // 4. ส่งข้อมูลไปยังหน้า 'browse'
+                res.render('browse', {
+                    games: gamesWithImages,
+                    user: req.session.userId ? await userModels.findByUserID(req.session.userId) : null,
+                    selectedTags: tagArray, // ส่ง tags ที่ถูกเลือกกลับไปแสดงในช่องกรอง
+                    query: query || '',
+                    sortOrder: currentSortOrder
                 });
-            }
 
-            // 🔹 ดึง images ของแต่ละเกม
-            const gamesWithImages = await Promise.all(
-                allGames.map(async (game) => {
-                    const images = await gameModels.findImagesByGameId(game.Game_id);
-                    return {
-                        ...game,
-                        images: images.length > 0 ? images.map(img => img.Path) : [game.Game_Cover]
-                    };
-                })
-            );
-
-            res.render('browse', {
-                games: gamesWithImages,
-                user: req.session.userId ? await userModels.findByUserID(req.session.userId) : null,
-                selectedTags: tagArray,
-                query: query || '',
-                sortOrder: 'newest'
-            });
+            } catch (error) {
+                console.error("Error searching games:", error);
+                res.status(500).send("Internal Server Error");
+            };
 
         } catch (error) {
             console.error("Error searching games:", error);

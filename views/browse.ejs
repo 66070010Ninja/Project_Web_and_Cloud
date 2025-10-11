@@ -37,23 +37,26 @@
                     <div class="filter-by-tags">
                         <label for="tags-filter">Filter by Tags:</label>
                         <select id="tags-filter" name="tags" multiple="multiple">
-                            <option value="Action">Action</option>
-                            <option value="Adventure">Adventure</option>
-                            <option value="Card Game">Card Game</option>
-                            <option value="Educational">Educational</option>
-                            <option value="Fighting">Fighting</option>
-                            <option value="Interactive Fiction">Interactive Fiction</option>
-                            <option value="Puzzle">Puzzle</option>
-                            <option value="Racing">Racing</option>
-                            <option value="Other">Other</option>
+                            <% 
+                                // Define the list of all possible tags
+                                const allTags = ["Action", "Adventure", "Card Game", "Educational", "Fighting", "Interactive Fiction", "Puzzle", "Racing", "Other"];
+                            %>
+                            <% allTags.forEach(tag => { 
+                                // Check if the current tag is in the array passed by the controller (selectedTags)
+                                const isSelected = selectedTags && selectedTags.includes(tag);
+                            %>
+                            <option value="<%= tag %>" <%= isSelected ? 'selected' : '' %>>
+                                <%= tag %>
+                            </option>
+                            <% }); %>
                         </select>
                     </div>
                     <div class="sort-by">
                         <label for="sort-order">Sort by:</label>
                         <select id="sort-order" name="sort">
-                            <option value="newest">Newest</option>
-                            <option value="most_downloaded">Most Downloaded</option>
-                            <option value="most_liked">Most Liked</option>
+                            <option value="newest" <%= sortOrder === 'newest' ? 'selected' : '' %>>Newest</option>
+                            <option value="most_downloaded" <%= sortOrder === 'most_downloaded' ? 'selected' : '' %>>Most Downloaded</option>
+                            <option value="most_liked" <%= sortOrder === 'most_liked' ? 'selected' : '' %>>Most Liked</option>
                         </select>
                     </div>
                 </div>
@@ -100,11 +103,71 @@
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script>
         $(document).ready(function() {
-            $('#tags-filter').select2({
-                placeholder: 'Select tags to filter games',
-                allowClear: true
+            const $tagsFilter = $('#tags-filter');
+            const $sortOrder = $('#sort-order');
+
+            // 1. Initialize Select2
+            $tagsFilter.select2({
+                placeholder: 'Select tags to filter games',
+                allowClear: true
+            });
+            
+            // 2. ฟังก์ชันหลักในการค้นหา (จะถูกเรียกเมื่อค่าเปลี่ยน)
+            function performSearch() {
+                const selectedTags = $tagsFilter.val() || [];
+                const sortOrder = $sortOrder.val() || 'newest';
+                
+                // ดึงค่า query ปัจจุบัน (ถ้ามี)
+                const queryParams = new URLSearchParams(window.location.search);
+                const currentQuery = queryParams.get('query') || '';
+
+                // สร้าง URL Parameters ใหม่
+                const newParams = new URLSearchParams();
+                
+                if (selectedTags.length > 0) {
+                    // ใส่ Tags ที่เลือกทั้งหมด คั่นด้วย comma
+                    newParams.set('tags', selectedTags.join(','));
+                }
+
+                if (currentQuery) {
+                    newParams.set('query', currentQuery);
+                }
+                
+                newParams.set('sortOrder', sortOrder);
+
+                // นำทางไปยัง URL ค้นหาใหม่ทันที
+                window.location.href = `/browse/search?${newParams.toString()}`;
+            }
+
+            // 3. Hook: Trigger search when tags change
+            // เมื่อค่าในช่อง Select2 เปลี่ยน (จากการคลิกด้านข้าง หรือการเลือก/ลบในช่องเอง) ให้ค้นหาทันที
+            $tagsFilter.on('change', function() {
+                performSearch();
             });
-        });
+            
+            // 4. Hook: Trigger search when sort order changes
+            $sortOrder.on('change', function() {
+                performSearch();
+            });
+
+            // 5. จัดการการคลิกที่แถบ Popular Tags (ด้านข้าง)
+            // โค้ดนี้จะเปลี่ยนค่า Select2 และ "change" event ในข้อ 3. จะทำงานต่อเอง
+            $('.tag-list a').on('click', function(e) {
+                e.preventDefault();
+                const tagName = $(this).text().trim();
+                let currentTags = $tagsFilter.val() || [];
+
+                // สลับสถานะการเลือก: ถ้ามีอยู่แล้วให้ลบออก ถ้าไม่มีให้เพิ่ม
+                if (!currentTags.includes(tagName)) {
+                    currentTags.push(tagName);
+                } else {
+                    currentTags = currentTags.filter(tag => tag !== tagName);
+                }
+
+                // สั่งให้ Select2 อัปเดตค่า และ trigger 'change'
+                $tagsFilter.val(currentTags).trigger('change');
+            });
+        });
     </script>
 </body>
 </html>
