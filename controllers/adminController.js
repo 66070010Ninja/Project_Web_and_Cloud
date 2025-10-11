@@ -1,5 +1,3 @@
-const adminModels = require('../models/adminModels');
-
 const adminController = {
     getAdminPage: async(req, res) => {
         try {
