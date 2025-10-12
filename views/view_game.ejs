@@ -38,13 +38,7 @@
             <!-- Download Section -->
             <section class="game-section download-section">
                 <h2>Download</h2>
-                <% if (game.File_Game) { %>
-                    <a href="<%= game.File_Game %>" class="btn btn-primary" download>
-                        Download
-                    </a>
-                <% } else { %>
-                    <p>No download available.</p>
-                <% } %>
+                <a href="/game/download/<%= game.Game_id %>" class="btn btn-primary">Download Game</a>
             </section>
 
             <!-- Comments Section -->
@@ -127,15 +121,15 @@
              <div class="info-card stats-card">
                  <div class="stat-item">
                      <i class="fas fa-eye"></i>
-                     <span><%= game.views || 0 %> Views</span>
+                     <span><%= game.View || 0 %> Views</span>
                  </div>
                  <div class="stat-item">
                      <i class="fas fa-download"></i>
-                     <span><%= game.downloads || 0 %> Downloads</span>
+                     <span><%= game.Download || 0 %> Downloads</span>
                  </div>
                  <div class="stat-item">
                      <i class="fas fa-thumbs-up"></i>
-                     <span><%= game.likes || 0 %> Likes</span>
+                     <span><%= game.Like || 0 %> Likes</span>
                  </div>
              </div>
         </aside>

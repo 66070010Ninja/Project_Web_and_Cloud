@@ -100,6 +100,57 @@ const gameController = {
         }
     },
 
+    getDownloadGame: async (req, res) => {
+        try {
+            const gameId = parseInt(req.params.id, 10);
+
+            // 1. ตรวจสอบและดึงข้อมูลเกม
+            const game = await gameModels.findGameById(gameId);
+            if (!game || !game.File_Game) {
+                return res.status(404).send("Game file not found.");
+            }
+
+            // 2. สร้าง Path ไปยังไฟล์เกม
+            const filePath = path.join(__dirname, "../public/game/file", game.File_Game);
+
+            // 3. ตรวจสอบว่าไฟล์มีอยู่จริง
+            try {
+                await fsPromises.access(filePath, fs.constants.F_OK);
+            } catch (e) {
+                console.error(`File not found at path: ${filePath}`);
+                return res.status(404).send("Game file not found on server.");
+            }
+
+            // 4. ส่งไฟล์กลับไปให้ผู้ใช้ดาวน์โหลด
+            res.download(filePath, game.Game_Title + '.zip', async (err) => {
+                if (err) {
+
+                    if (err.code === 'ECONNABORTED' || err.headersSent) {
+                        console.log(`Download for Game ID ${gameId} aborted by client.`);
+                        return; // ไม่ต้องทำอะไรต่อ (ไม่นับดาวน์โหลด)
+                    }
+                    // หาก err เป็น Header already sent: เป็นไปได้ว่าผู้ใช้ยกเลิกการโหลด (Client Abort)
+                    // เราจะไม่นับดาวน์โหลดในกรณีนี้ เพราะไฟล์ไม่ได้ถูกส่งไปจนจบ
+                    // แต่ถ้าเป็น Error อื่นๆ เช่น Internal Error เราควร log ไว้
+                    console.error("Error during file download (possibly client abort):", err.message);
+                } else {
+                    // 💡✅ 5. ย้ายการนับค่า Download มาไว้ใน Callback นี้
+                    //    Callback นี้จะถูกเรียกเมื่อการตอบสนองเสร็จสิ้น (ไฟล์ถูกส่งจนจบ)
+                    try {
+                        await gameModels.incrementGameDownloads(gameId);
+                        console.log(`Game ID ${gameId}: Download count successfully incremented.`);
+                    } catch (dbErr) {
+                        console.error(`Error incrementing download count for game ID ${gameId}:`, dbErr);
+                    }
+                }
+            });
+
+        } catch (error) {
+            console.error("Error downloading game:", error);
+            res.status(500).send("Internal Server Error during download process.");
+        }
+    },
+
     // ==================================================
     // แสดงหน้า View Game พร้อม Reviews
     // ==================================================
@@ -115,6 +166,9 @@ const gameController = {
             if (!game) {
                 return res.status(404).send("Game not found");
             }
+
+            // 💡 เพิ่ม: อัปเดตค่า View เมื่อมีการเข้าชมหน้า
+            await gameModels.incrementGameViews(gameId);
 
             // --- ดึงข้อมูลอื่นๆ ที่เกี่ยวข้องกับเกม ---
             const images = await gameModels.findImagesByGameId(gameId);

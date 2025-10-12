@@ -43,6 +43,8 @@ router.get('/view/:id', gameController.getViewGamePage);
 // ลบเกม - 🔒 ใช้ isRole
 router.post('/delete/:id', isAuthenticated, isRole(['Member', 'Admin']), gameController.postDeleteGame);
 
+router.get('/download/:id', gameController.getDownloadGame);
+
 // --------------------------
 // Export Router
 // --------------------------

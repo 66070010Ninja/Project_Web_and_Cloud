@@ -40,6 +40,20 @@ const gameModels = {
         }
     }),
 
+    incrementGameViews: async (gameId) => {
+        return await prisma.games.update({
+            where: { Game_id: gameId },
+            data: { View: { increment: 1 } }, // ใช้คำสั่ง increment ของ Prisma
+        });
+    },
+
+    incrementGameDownloads: async (gameId) => {
+        return await prisma.games.update({
+            where: { Game_id: gameId },
+            data: { Download: { increment: 1 } }, // 💡 เพิ่มค่า Download
+        });
+    },
+
     /**
      * อัปเดตข้อมูลเกม (แก้ไขรายละเอียด)
      */

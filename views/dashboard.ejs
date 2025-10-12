@@ -24,8 +24,8 @@
             let totalDownloads = 0;
             if (games && games.length > 0) {
                 games.forEach(game => {
-                    totalViews += game.views || 0;
-                    totalDownloads += game.downloads || 0;
+                    totalViews += game.View || 0;
+                    totalDownloads += game.Download || 0;
                 });
             }
             %>
@@ -48,8 +48,8 @@
                             <div class="game-list-details">
                                 <h3 class="game-list-title"><%= game.Game_Title %></h3>
                                 <div class="game-list-stats">
-                                    <span><i class="fas fa-eye"></i> <%= game.views || 0 %></span>
-                                    <span><i class="fas fa-download"></i> <%= game.downloads || 0 %></span>
+                                    <span><i class="fas fa-eye"></i> <%= game.View || 0 %></span>
+                                    <span><i class="fas fa-download"></i> <%= game.Download || 0 %></span>
                                 </div>
                             </div>
                             <div class="game-list-actions">
