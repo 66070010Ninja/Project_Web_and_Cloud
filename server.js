@@ -63,7 +63,7 @@ app.use((req, res, next) => {
 app.use(fileUpload());
 
 // ... (Static File Setup) ...
-app.use('/public', express.static(path.join(__dirname, 'public')));
+// app.use('/public', express.static(path.join(__dirname, 'public')));
 app.use(express.static('public'));
 
 // --------------------------

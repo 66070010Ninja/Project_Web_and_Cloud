@@ -46,8 +46,6 @@ const gameController = {
     getEditGamePage: async (req, res) => {
         try {
 
-            console.log('Logged in user data (req.user):', req.user);
-
             const gameId = parseInt(req.params.id, 10);
 
             // 💡 1. ตรวจสอบว่ามีผู้ใช้ล็อกอินอยู่หรือไม่ (แม้ว่า Routes จะป้องกันแล้วก็ตาม)
@@ -385,15 +383,20 @@ const gameController = {
             if (!game) return res.status(404).send("Game not found");
 
             // ตรวจสอบว่าเป็นเจ้าของเกมหรือไม่
-            if (game.User_id !== userId) {
-                return res.status(403).send("Forbidden - You do not own this game");
+            if (game.User_id !== userId && req.user.Roles !== 'Admin') {
+                return res.status(403).send("Forbidden - You are not authorized to delete this game.");
             }
 
             // ✅ Soft delete (ตั้งค่า Soft_Delete = 0)
             await gameModels.softDeleteGame(gameId);
-            if (from === 'edit') {
+            if (from === 'admin') {
+                // ถ้ามาจากหน้า Admin ให้กลับไปที่หน้า Admin
+                res.redirect('/admin');
+            } else if (from === 'edit') {
+                // ถ้ามาจากหน้า Edit (มักจะเป็นการเรียก AJAX) ให้ตอบกลับเป็น JSON
                 res.json({ success: true });
             } else {
+                // กรณีอื่น ๆ (เช่น จาก dashboard) ให้กลับไปที่ dashboard
                 res.redirect('/dashboard');
             }
         } catch (error) {

@@ -284,6 +284,50 @@ const gameModels = {
         });
     },
 
+    findAllGames: async () => {
+        try {
+            const gamesData = await prisma.games.findMany({
+                where: {
+                    Soft_Delete: 1 // ดึงเฉพาะเกมที่ยังไม่ถูกซ่อน (Soft Delete = 1)
+                },
+                select: {
+                    Game_id: true,
+                    Game_Title: true,
+                    View: true,
+                    Download: true,
+                    Game_Images: { // ดึงข้อมูลรูปภาพเกมที่เกี่ยวข้อง
+                        take: 1, // เอาแค่รูปแรก (สมมติว่าเป็นรูปปก)
+                        select: {
+                            Path: true // Path คือชื่อไฟล์รูปภาพ
+                        }
+                    }
+                },
+                orderBy: {
+                    Game_id: 'desc' // เรียงลำดับเกมล่าสุด
+                }
+            });
+
+            // จัดรูปแบบข้อมูลให้ตรงกับที่ EJS คาดหวัง
+            // EJS คาดหวัง: Game_ID, Game_Title, views, downloads, Game_Cover
+            return gamesData.map(game => ({
+                Game_ID: game.Game_id,
+                Game_Title: game.Game_Title,
+                // แปลงชื่อ field ให้ตรงกับ EJS
+                views: game.View,
+                downloads: game.Download,
+                // กำหนดรูปปก: /game/img/ + ชื่อไฟล์
+                Game_Cover: game.Game_Images.length > 0
+                            ? game.Game_Images[0].Path // 💡 ต้องต่อ Path ที่ถูกต้อง
+                            : '/img/default_cover.jpg' // ใช้ default ถ้าไม่มีรูป
+            }));
+
+        } catch (error) {
+            console.error("Prisma Error in findAllGames:", error);
+            // ส่ง error ขึ้นไปเพื่อให้ Controller จัดการต่อ
+            throw new Error("Failed to fetch game list.");
+        }
+    },
+
 };
 
 // --------------------------

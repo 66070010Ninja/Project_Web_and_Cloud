@@ -5,6 +5,9 @@
         </a>
         <a href="/browse" class="nav-link">Browse</a>
         <a href="/dashboard" class="nav-link">Dashboard</a>
+        <% if (typeof user !== 'undefined' && user && user.Roles === 'Admin') { %>
+            <a href="/admin" class="nav-link">Admin</a>
+        <% } %>
     </div>
 
     <div class="nav-center">

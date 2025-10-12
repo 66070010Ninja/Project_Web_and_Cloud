@@ -1,3 +1,7 @@
+ <!-- ==========================
+ views/admin.ejs (โค้ดที่แก้ไข)
+ ========================== -->
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -21,6 +25,12 @@
             <div class="section-header">
                 <h2>Manage All Games</h2>
             </div>
+            
+            <% if (typeof error !== 'undefined' && error) { %>
+                <div class="alert alert-danger" style="color: red; padding: 10px; border: 1px solid red; margin-bottom: 20px;">
+                    <strong>Error:</strong> <%= error %>
+                </div>
+            <% } %>
 
             <% if (games && games.length > 0) { %>
                 <div class="game-list-container">
@@ -37,7 +47,7 @@
                                 </div>
                             </div>
                             <div class="game-list-actions">
-                                <form action="/game/delete/<%= game.Game_ID %>" method="POST" onsubmit="return confirm('Are you sure you want to delete this game?');">
+                                <form action="/game/delete/<%= game.Game_ID %>?from=admin" method="POST" onsubmit="return confirm('Are you sure you want to delete this game?');">
                                     <button type="submit" class="btn btn-delete"><i class="fas fa-trash-alt"></i> Delete</button>
                                 </form>
                             </div>
