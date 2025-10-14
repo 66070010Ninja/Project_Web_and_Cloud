@@ -2,6 +2,8 @@ SETUP PROJECT
 
 npm init -y
 
+npm test
+
 docker-compose up -d
 
 npx prisma db push

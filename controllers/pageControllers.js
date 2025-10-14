@@ -6,7 +6,6 @@
 // Import Dependencies
 // --------------------------
 const gameModels = require('../models/gameModels');
-const userModels = require('../models/userModels');
 
 // --------------------------
 // Helper Function
