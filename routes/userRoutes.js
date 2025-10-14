@@ -9,6 +9,7 @@ const express = require('express');
 const router = express.Router();
 // 💡 นำเข้า authMiddleware
 const { isAuthenticated, isGuest } = require('../middlewares/authMiddleware');
+const upload = require('../middlewares/uploadMiddleware');
 
 // --------------------------
 // Import Controller
@@ -41,7 +42,7 @@ router.get('/view/:id', userController.getViewPage);
 router.get('/edit', isAuthenticated, userController.getEditProfilePage);
 
 // Edit Profile (POST) - 🔐 ใช้ isAuthenticated: ต้องล็อกอินถึงจะแก้ไขได้
-router.post('/edit/:id', isAuthenticated, userController.postEditProfile);
+router.post('/edit/:id', isAuthenticated, upload.single('Profile_Image'), userController.postEditProfile);
 
 // --------------------------
 // Export Router

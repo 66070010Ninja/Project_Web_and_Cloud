@@ -40,7 +40,7 @@ const userController = {
         try {
             const userId = parseInt(req.params.id, 10);
             // โค้ดนี้ถูกต้องแล้ว: ดึงข้อมูลเต็มสำหรับหน้า View
-            const user = await userModels.findByUserID(userId); 
+            const user = await userModels.findByUserID(userId);
 
             if (!user) return res.status(404).send("User not found");
 
@@ -92,7 +92,7 @@ const userController = {
             const fullUser = await userModels.findByUserID(user.User_id);
 
             // ✅ เก็บข้อมูลเต็มลงใน session
-            if (!fullUser) { 
+            if (!fullUser) {
                 // Fallback: ถ้าดึงข้อมูลเต็มไม่ได้ ให้ใช้ข้อมูลย่อที่มี Roles
                 req.session.user = {
                     User_id: user.User_id,
@@ -177,7 +177,7 @@ const userController = {
     getEditProfilePage: async (req, res) => {
         try {
             // ใช้ req.user ที่กำหนดใน Global Middleware แล้ว (แต่ใช้ req.session.user ก็ยังใช้งานได้)
-            const userId = req.session.user ? req.session.user.User_id : null; 
+            const userId = req.session.user ? req.session.user.User_id : null;
             if (!userId) return res.redirect('/user/login');
 
             // ดึงข้อมูลเต็มเพื่อนำไปแสดงในฟอร์มแก้ไข
@@ -197,57 +197,74 @@ const userController = {
     postEditProfile: async (req, res) => {
         try {
             const userId = req.session.user ? req.session.user.User_id : null;
-            if (!userId) return res.status(401).send("Unauthorized");
+            if (!userId) {
+                req.flash('error', 'Please log in to update your profile.');
+                return res.status(401).redirect('/user/login');
+            }
 
+            // Multer ได้ประมวลผลฟอร์มแล้ว ข้อมูลฟอร์มอยู่ใน req.body
             const { User_Name } = req.body;
 
-            // อัปเดตชื่อผู้ใช้
+            // 💡 ตรวจสอบว่าชื่อผู้ใช้ไม่ว่างเปล่า
+            if (!User_Name || User_Name.trim() === '') {
+                req.flash('error', 'Username cannot be empty.');
+                return res.redirect(`/user/edit`);
+            }
+
+            // อัปเดตชื่อผู้ใช้ (ใช้ User_Name ที่มาจาก req.body)
             await userModels.updateUser(userId, { User_Name });
-            
+
             let updatedUser = null; // ตัวแปรสำหรับเก็บข้อมูลผู้ใช้ล่าสุด
 
-            // ถ้ามีไฟล์อัปโหลด → บันทึกลงโฟลเดอร์
-            if (req.files && req.files.Profile_Image) {
-                const file = req.files.Profile_Image;
-                const uploadDir = path.join(__dirname, '..', 'public', 'user', 'img');
+            // 💡 Multer (single) ใช้ req.file แทน req.files
+            if (req.file) {
+                const file = req.file;
+                const filename = file.filename;
 
-                // สร้างโฟลเดอร์ถ้ายังไม่มี
-                if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-
-                const filename = `${Date.now()}_${file.name}`;
-                const destPath = path.join(uploadDir, filename);
-
-                // ย้ายไฟล์จริงไปที่ public
-                await file.mv(destPath);
-
-                // เก็บ path ของภาพลง DB
+                // สร้าง Path สำหรับเก็บใน DB (ต้องตรงกับ destination ที่ตั้งใน uploadMiddleware)
                 const profileImagePath = `/user/img/${filename}`;
 
-                // ✅ 1. เพิ่มรูปโปรไฟล์เข้า DB ก่อน
+                // 💡 2. ลบรูปโปรไฟล์เก่าก่อน (พร้อมเงื่อนไขป้องกัน user_default.jpg)
+                const oldUser = await userModels.findByUserID(userId);
+                const oldImagePath = oldUser.Profile_Image_Path; // Path เก่าใน DB
+
+                // ตรวจสอบ: Path เก่ามีอยู่ + ต้องไม่เป็นรูป Default
+                if (oldImagePath && oldImagePath !== '/user/img/user_default.jpg') {
+                    // 💡 ใช้ path.join เพื่อสร้าง Absolute Path
+                    const absoluteOldPath = path.join(__dirname, '..', 'public', oldImagePath);
+                    try {
+                        // 💡 ใช้ fs.promises.unlink() หรือ fs.unlink() (ถ้าไม่ได้ require 'fs/promises')
+                        await fs.promises.unlink(absoluteOldPath);
+                    } catch (err) {
+                        // ไม่ต้องทำอะไรมากถ้าลบไฟล์เก่าไม่ได้ (อาจไม่มีไฟล์อยู่จริง)
+                        console.warn("Warning: Could not delete old profile image:", err.message);
+                    }
+                }
+
+                // ✅ 3. อัปเดต Path รูปโปรไฟล์ใหม่เข้า DB
                 await userModels.addProfileImage(userId, profileImagePath);
 
-                // ✅ 2. ดึงข้อมูลผู้ใช้แบบเต็มล่าสุด (รวม Profile_Image ใหม่)
-                updatedUser = await userModels.findByUserID(userId);
-
                 req.flash('success', 'Profile and image updated successfully!');
-
             } else {
-                // ✅ กรณีอัปเดตแค่ชื่อผู้ใช้: ดึงข้อมูลล่าสุดเพื่ออัปเดต session
-                updatedUser = await userModels.findByUserID(userId);
+                // ✅ กรณีอัปเดตแค่ชื่อผู้ใช้
                 req.flash('success', 'Profile name updated successfully!');
             }
-            
-            // ✅ บันทึกข้อมูลผู้ใช้แบบเต็มลงใน Session (ไม่ว่าจะเปลี่ยนรูปหรือไม่ก็ตาม)
+
+            // ✅ ดึงข้อมูลผู้ใช้แบบเต็มล่าสุด (ไม่ว่าจะเปลี่ยนรูปหรือไม่ก็ตาม)
+            updatedUser = await userModels.findByUserID(userId);
+
+            // ✅ บันทึกข้อมูลผู้ใช้แบบเต็มลงใน Session 
             if (updatedUser) {
                 req.session.user = updatedUser;
             }
-
 
             // กลับไปหน้าโปรไฟล์ของตัวเอง
             res.redirect(`/user/view/${userId}`);
         } catch (err) {
             console.error("Error updating profile:", err);
-            res.status(500).send("Error updating profile");
+            req.flash('error', `Error updating profile: ${err.message}`);
+            // Redirect กลับไปหน้าเดิม
+            res.status(500).redirect(`/user/edit`);
         }
     },
 
@@ -260,7 +277,7 @@ const userController = {
             if (!userId) return res.redirect('/user/login');
 
             // ดึงข้อมูลเต็ม (userModels.findByUserID มี include: { Profile_Image: true } อยู่แล้ว)
-            const user = await userModels.findByUserID(userId); 
+            const user = await userModels.findByUserID(userId);
             if (!user) return res.status(404).send("User not found");
 
             res.render('view_profile', { user });

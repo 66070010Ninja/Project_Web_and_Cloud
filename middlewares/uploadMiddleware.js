@@ -29,6 +29,10 @@ const storage = multer.diskStorage({
         } else if (file.fieldname === "images") {
             // 👉 กรณีเป็นรูปภาพเกม (.jpg, .png)
             cb(null, path.join(__dirname, "../public/game/img"));
+        }
+        else if (file.fieldname === "Profile_Image") { 
+             // 👉 กรณีเป็นรูปโปรไฟล์ (Profile_Image) ให้เก็บใน public/user/img
+             cb(null, path.join(__dirname, "../public/user/img")); 
         } else {
             // 👉 กรณีไม่ระบุหรือ field อื่น ๆ
             cb(null, path.join(__dirname, "../public"));
