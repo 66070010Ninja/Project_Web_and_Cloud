@@ -1,5 +1,5 @@
 // ==========================
-// gameRoutes.js (แก้ไข)
+// gameRoutes.js (จัดระเบียบ + อธิบาย)
 // ==========================
 
 // --------------------------
@@ -7,43 +7,132 @@
 // --------------------------
 const express = require("express");
 const router = express.Router();
-// 💡 นำเข้า authMiddleware
-const { isAuthenticated, isRole } = require('../middlewares/authMiddleware');
+
+// ✅ Middleware สำหรับตรวจสอบสิทธิ์และอัปโหลดไฟล์
+const { isAuthenticated, isRole } = require("../middlewares/authMiddleware");
+const upload = require("../middlewares/uploadMiddleware");
+
+// ✅ Controller สำหรับจัดการเกม
+const gameController = require("../controllers/gameControllers");
 
 // --------------------------
-// Import Controller
-// --------------------------
-const gameController = require('../controllers/gameControllers');
-
-// --------------------------
-// Game Routes
+// ROUTE: ระบบเกม (Game Management)
 // --------------------------
 
-// สร้างเกมใหม่ (หน้า form) - 🔒 ใช้ isRole: เฉพาะ Member/Admin
-router.get('/create', isAuthenticated, isRole(['Member', 'Admin']), gameController.getCreateGamePage);
+/**
+ * ==========================
+ * SECTION 1: PUBLIC ACCESS (เปิดให้เข้าถึงได้ทุกคน)
+ * ==========================
+ */
 
-// บันทึกข้อมูลเกมใหม่ - 🔒 ใช้ isRole
-router.post('/create', isAuthenticated, isRole(['Member', 'Admin']), gameController.postCreateGame);
+/**
+ * [GET] /game/view/:id
+ * 📄 แสดงรายละเอียดของเกม
+ * ไม่ต้องล็อกอินก็เข้าดูได้
+ */
+router.get("/view/:id", gameController.getViewGamePage);
 
-// แก้ไขเกม (หน้า form) - 🔒 ใช้ isRole (และควรมี Check Ownership ใน Controller ด้วย)
-router.get('/edit/:id', isAuthenticated, isRole(['Member', 'Admin']), gameController.getEditGamePage);
+/**
+ * [GET] /game/review/:id
+ * 💬 ดึงข้อมูลรีวิวของเกม (เช่น จาก AJAX)
+ * ไม่ต้องล็อกอิน
+ */
+router.get("/review/:id", gameController.getGameReview);
 
-// อัปเดตข้อมูลเกม - 🔒 ใช้ isRole
-router.post('/edit/:id', isAuthenticated, isRole(['Member', 'Admin']), gameController.postUpdateGame);
+/**
+ * [GET] /game/download/:id
+ * ⬇️ ดาวน์โหลดไฟล์เกม (เช่น .zip)
+ * เปิดให้สาธารณะ (หรือจะจำกัดภายหลังก็ได้)
+ */
+router.get("/download/:id", gameController.getDownloadGame);
 
-// เพิ่มรีวิวเกม - 🔐 ใช้ isAuthenticated: ต้องล็อกอินถึงจะรีวิวได้
-router.post('/review/:id', isAuthenticated, gameController.postCreateReview);
 
-// ดูรีวิวของเกม (GET) - 🔓 เปิดให้สาธารณะเข้าถึงได้
-router.get('/review/:id', gameController.getGameReview);
+/**
+ * ==========================
+ * SECTION 2: AUTHENTICATED USERS (ต้องล็อกอิน)
+ * ==========================
+ */
 
-// ดูรายละเอียดเกม - 🔓 เปิดให้สาธารณะเข้าถึงได้
-router.get('/view/:id', gameController.getViewGamePage);
+/**
+ * [POST] /game/review/:id
+ * 💬 เพิ่มรีวิวเกม (เฉพาะผู้ที่ล็อกอินแล้วเท่านั้น)
+ */
+router.post("/review/:id", isAuthenticated, gameController.postCreateReview);
 
-// ลบเกม - 🔒 ใช้ isRole
-router.post('/delete/:id', isAuthenticated, isRole(['Member', 'Admin']), gameController.postDeleteGame);
 
-router.get('/download/:id', gameController.getDownloadGame);
+/**
+ * ==========================
+ * SECTION 3: ROLE-BASED ACCESS (เฉพาะ Member/Admin)
+ * ==========================
+ */
+
+/**
+ * [GET] /game/create
+ * 🕹️ แสดงฟอร์มสร้างเกมใหม่
+ * เฉพาะ Member และ Admin
+ */
+router.get(
+  "/create",
+  isAuthenticated,
+  isRole(["Member", "Admin"]),
+  gameController.getCreateGamePage
+);
+
+/**
+ * [POST] /game/create
+ * 💾 บันทึกข้อมูลเกมใหม่ลงฐานข้อมูล
+ * อัปโหลดได้ทั้งไฟล์เกม (.zip) และภาพ (หลายไฟล์)
+ */
+router.post(
+  "/create",
+  isAuthenticated,
+  isRole(["Member", "Admin"]),
+  upload.fields([
+    { name: "file_game", maxCount: 1 }, // 1 ไฟล์เกม
+    { name: "images", maxCount: 10 },   // ได้สูงสุด 10 รูป
+  ]),
+  gameController.postCreateGame
+);
+
+/**
+ * [GET] /game/edit/:id
+ * ✏️ แสดงฟอร์มแก้ไขเกม
+ * ต้องเป็นเจ้าของเกมหรือ Admin (ตรวจใน Controller)
+ */
+router.get(
+  "/edit/:id",
+  isAuthenticated,
+  isRole(["Member", "Admin"]),
+  gameController.getEditGamePage
+);
+
+/**
+ * [POST] /game/edit/:id
+ * 💾 อัปเดตข้อมูลเกม
+ * (มี Check Ownership ภายใน Controller)
+ */
+router.post(
+  "/edit/:id",
+  isAuthenticated,
+  isRole(["Member", "Admin"]),
+  gameController.postUpdateGame
+);
+
+/**
+ * [POST] /game/delete/:id
+ * 🗑️ ลบเกมออกจากระบบ
+ * (ตรวจสิทธิ์ว่าเป็นเจ้าของหรือ Admin)
+ */
+router.post(
+  "/delete/:id",
+  isAuthenticated,
+  isRole(["Member", "Admin"]),
+  upload.fields([
+    { name: "file_game", maxCount: 1 }, // optional (ใช้เวลาแก้ไขไฟล์)
+    { name: "images", maxCount: 10 },   // optional (ใช้เวลาอัปเดตรูป)
+  ]),
+  gameController.postDeleteGame
+);
 
 // --------------------------
 // Export Router

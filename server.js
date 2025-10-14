@@ -1,87 +1,134 @@
 // ==========================
-// server.js (ไม่มีการเปลี่ยนแปลง)
+// server.js
+// (จัดระเบียบ + ใส่คอมเมนต์อธิบายละเอียด)
 // ==========================
 
-// --------------------------
-// Import Dependencies (เพิ่ม connect-flash)
-// --------------------------
-const express = require('express');
-const path = require('path');
-const session = require('express-session');
-const fileUpload = require('express-fileupload');
-const flash = require('connect-flash'); // 💡 เพิ่ม: Import connect-flash
 
 // --------------------------
-// App Initialization
+// 1️⃣ Import Dependencies
 // --------------------------
-const app = express();
-const port = 3000;
+const express = require('express');          // Framework หลักสำหรับ Web Server
+const path = require('path');                // ใช้จัดการเส้นทางไฟล์
+const session = require('express-session');  // จัดการ session ของผู้ใช้
+const flash = require('connect-flash');      // สำหรับส่งข้อความชั่วคราวระหว่าง request-response
+
 
 // --------------------------
-// View Engine Setup (EJS)
+// 2️⃣ App Initialization
 // --------------------------
+const app = express(); // สร้าง instance ของ Express
+const port = 3000;     // ตั้งค่า port ที่ใช้รันเว็บเซิร์ฟเวอร์
+
+
+// --------------------------
+// 3️⃣ View Engine Setup (EJS Template)
+// --------------------------
+/**
+ * EJS (Embedded JavaScript Templates)
+ * ใช้แสดงหน้าเว็บแบบ dynamic (ฝัง JS logic ใน HTML)
+ */
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
+
 // --------------------------
-// Middleware Setup
+// 4️⃣ Core Middleware Setup
 // --------------------------
+
+/**
+ * ✅ Body Parser
+ * - รองรับข้อมูลที่ส่งผ่านฟอร์ม (urlencoded)
+ * - รองรับ JSON payload
+ */
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-// 1. Session Setup (ต้องอยู่ก่อน flash)
+/**
+ * ✅ Session Setup
+ * ต้องอยู่ก่อน connect-flash เสมอ
+ * ใช้เก็บข้อมูลผู้ใช้ที่ล็อกอินหรือ flash message
+ */
 app.use(session({
-    secret: 'your-secret-key',
-    resave: false,
-    saveUninitialized: false,
-    cookie: { secure: false }
+    secret: 'your-secret-key',   // คีย์ลับสำหรับเข้ารหัส session
+    resave: false,               // ไม่บันทึกซ้ำถ้าไม่มีการเปลี่ยนแปลง
+    saveUninitialized: false,    // ไม่สร้าง session ถ้ายังไม่จำเป็น
+    cookie: { secure: false }    // false = ใช้ได้ทั้ง HTTP/HTTPS (dev mode)
 }));
 
-// 2. CONNECT-FLASH: 💡 เพิ่ม: ต้องเรียกใช้ทันทีหลัง session
+/**
+ * ✅ Connect-Flash Middleware
+ * ใช้คู่กับ session เพื่อเก็บข้อความชั่วคราว (เช่น success/error)
+ */
 app.use(flash());
 
-// 3. GLOBAL MIDDLEWARE: 💡 เพิ่ม: เพื่อส่งข้อมูล user/flash message ไปยัง EJS
+/**
+ * ✅ Global Middleware
+ * ใช้กำหนดข้อมูลที่ส่งไปยังทุกหน้า EJS เช่น:
+ *  - user (จาก session)
+ *  - flash message (error/success)
+ */
 app.use((req, res, next) => {
-    // กำหนด req.user และ res.locals.user จาก session (สำหรับ authMiddleware และ EJS)
+    // กำหนดข้อมูลผู้ใช้ (ถ้ามี session.user)
     if (req.session.user) {
-        res.locals.user = req.session.user; // สำหรับ EJS
-        req.user = req.session.user;        // สำหรับ Controller/Middleware
+        res.locals.user = req.session.user; // ใช้ใน EJS
+        req.user = req.session.user;        // ใช้ใน Controller/Middleware
     } else {
-        // หากไม่มี session.user ให้เคลียร์ค่า (เผื่อไว้)
         res.locals.user = null;
         req.user = null;
     }
 
-    // กำหนด flash messages ให้ใช้ได้ใน EJS
+    // ส่งต่อข้อความ flash ไปยัง EJS
     res.locals.errorMessage = req.flash('error');
     res.locals.successMessage = req.flash('success');
 
     next();
 });
 
-// อัปโหลดไฟล์ (ใช้ req.files)
-app.use(fileUpload());
 
-// ... (Static File Setup) ...
-// app.use('/public', express.static(path.join(__dirname, 'public')));
+// --------------------------
+// 5️⃣ Static File Serving
+// --------------------------
+/**
+ * ใช้สำหรับเปิดให้เข้าถึงไฟล์ในโฟลเดอร์ public ได้โดยตรง
+ * เช่น รูปภาพ, CSS, JS, ไฟล์เกม, ฯลฯ
+ * ตัวอย่าง: /public/game/img/... → http://localhost:3000/game/img/...
+ */
 app.use(express.static('public'));
 
+
 // --------------------------
-// Routes (ควรอยู่ล่างสุด)
+// 6️⃣ Route Setup (Main Routing)
 // --------------------------
+/**
+ * รวม route หลักของระบบทั้งหมด
+ * เรียงตามลำดับความเฉพาะเจาะจง → ทั่วไป
+ */
 const adminRoute = require('./routes/adminRouters');
-const userRoute = require('./routes/userRoutes');
-const gameRoute = require('./routes/gameRoutes');
-const pageRoute = require('./routes/pageRoutes');
+const userRoute  = require('./routes/userRoutes');
+const gameRoute  = require('./routes/gameRoutes');
+const pageRoute  = require('./routes/pageRoutes');
 
-app.use('/admin', adminRoute);
-app.use('/user', userRoute);
-app.use('/game', gameRoute);
-app.use('/', pageRoute);
+// ✅ เชื่อม route เข้ากับ prefix ของแต่ละส่วน
+app.use('/admin', adminRoute);  // ส่วนจัดการของแอดมิน
+app.use('/user', userRoute);    // ระบบผู้ใช้
+app.use('/game', gameRoute);    // ระบบเกม (CRUD + Review)
+app.use('/', pageRoute);        // หน้าเพจทั่วไป (Home, About, Contact ฯลฯ)
+
 
 // --------------------------
-// Start Server
+// 7️⃣ Start Server
 // --------------------------
-app.listen(port, () => {
+/**
+ * เริ่มรันเซิร์ฟเวอร์บน port ที่กำหนด
+ * และเก็บ instance ไว้ในตัวแปร server (เพื่อควบคุม timeout ได้)
+ */
+const server = app.listen(port, () => {
     console.log(`✅ Server is running at: http://localhost:${port}`);
 });
+
+/**
+ * ✅ ตั้งค่า Server Timeout
+ * - เพื่อรองรับการอัปโหลดไฟล์ขนาดใหญ่
+ * - ค่า 300000 ms = 5 นาที
+ */
+server.setTimeout(300000);

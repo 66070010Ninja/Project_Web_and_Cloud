@@ -1,91 +1,143 @@
 // ==========================
 // gameController.js
 // ==========================
+// Controller หลักของระบบเกม (Game System Controller)
+// จัดการฟังก์ชันทั้งหมดเกี่ยวกับเกม เช่น Create / Edit / Delete / View / Download / Review
+// ==========================
+
 
 // --------------------------
 // Import Dependencies
 // --------------------------
-const gameModels = require('../models/gameModels');
-const userModels = require('../models/userModels');
-const dayjs = require('dayjs');
-const relativeTime = require('dayjs/plugin/relativeTime');
 const path = require('path');
 const fs = require('fs');
 const fsPromises = fs.promises;
+const dayjs = require('dayjs');
+const relativeTime = require('dayjs/plugin/relativeTime');
 
-// ขยายความสามารถให้ dayjs แปลงเวลาแบบ relative (xx days ago)
+const gameModels = require('../models/gameModels');
+const userModels = require('../models/userModels');
+
+// เปิดใช้งาน plugin เพื่อแสดงเวลารูปแบบ "xx days ago"
 dayjs.extend(relativeTime);
 
+
 // --------------------------
-// Game Controller
+// Game Controller Object
 // --------------------------
 const gameController = {
 
     // ==================================================
-    // แสดงหน้า Create Game
+    // 🟩 1. หน้า “สร้างเกมใหม่” (GET)
     // ==================================================
     getCreateGamePage: async (req, res) => {
         try {
-            let user = req.user || null;
-
+            const user = req.user || null;
             res.render('create_game', {
-                user: user, // ส่งข้อมูลผู้ใช้
+                user,
                 error: null
             });
-
         } catch (err) {
             console.error("Error fetching user for create game page:", err);
-            // อาจจะ render หน้า error หรือ redirect ไปที่อื่น
             res.status(500).send("An error occurred");
         }
     },
 
+
     // ==================================================
-    // แสดงหน้า Edit Game
+    // 🟩 2. บันทึก “เกมใหม่” ลงฐานข้อมูล (POST)
+    // ==================================================
+    postCreateGame: async (req, res) => {
+        try {
+            const { title_game, description, status_game, details } = req.body;
+            const userId = req.user ? req.user.User_id : null;
+
+            // ตรวจสอบการล็อกอิน
+            if (!userId)
+                return res.status(401).json({ error: "กรุณาเข้าสู่ระบบก่อน" });
+
+            // จัดการไฟล์จาก Multer
+            const uploadedFiles = req.files || {};
+            const gameFile = uploadedFiles.file_game ? uploadedFiles.file_game[0] : null;
+            const images = uploadedFiles.images || [];
+
+            if (!gameFile)
+                return res.status(400).json({ error: "ต้องเลือกไฟล์เกม (.zip)" });
+            if (images.length < 1)
+                return res.status(400).json({ error: "ต้องอัปโหลดรูปเกมอย่างน้อย 1 รูป" });
+
+            // จัดการ tags
+            let tags = req.body.tags;
+            if (!tags) tags = [];
+            else if (!Array.isArray(tags)) tags = [tags];
+
+            // บันทึกเกมหลัก
+            const newGame = await gameModels.createGame({
+                user_id: userId,
+                title_game,
+                description,
+                status_game,
+                details,
+                File_Game: gameFile.filename
+            });
+
+            // บันทึกรูปภาพ
+            for (const img of images) {
+                await gameModels.createImage({
+                    url: img.filename,
+                    game_id: newGame.Game_id
+                });
+            }
+
+            // บันทึก tags
+            if (tags.length > 0) {
+                await gameModels.createTags(newGame.Game_id, tags);
+            }
+
+            res.json({ message: "สร้างเกมสำเร็จ", game: newGame });
+
+        } catch (err) {
+            console.error("Error creating game:", err);
+            res.status(500).json({ error: "สร้างเกมไม่สำเร็จ กรุณาลองใหม่" });
+        }
+    },
+
+
+    // ==================================================
+    // 🟦 3. หน้า “แก้ไขเกม” (GET)
     // ==================================================
     getEditGamePage: async (req, res) => {
         try {
-
             const gameId = parseInt(req.params.id, 10);
 
-            // 💡 1. ตรวจสอบว่ามีผู้ใช้ล็อกอินอยู่หรือไม่ (แม้ว่า Routes จะป้องกันแล้วก็ตาม)
-            // ข้อมูล req.user ถูกกำหนดโดย isAuthenticated middleware
+            // ตรวจสอบ login
             if (!req.user) {
                 req.flash('error', 'Please log in to edit a game.');
                 return res.redirect('/user/login');
             }
 
-            // --- หาเกมจาก DB เพื่อตรวจสอบความเป็นเจ้าของ ---
+            // ดึงข้อมูลเกม
             const game = await gameModels.findGameById(gameId);
             if (!game) {
                 req.flash('error', 'Game not found.');
                 return res.status(404).redirect('/browse');
             }
 
-            // 💡 2. ตรวจสอบความเป็นเจ้าของ (Ownership Check)
-            const loggedInUserId = req.user.User_id; // User_id จาก account model
-            const gameOwnerId = game.User_id;       // User_id ของเจ้าของเกม
-            const userRole = req.user.Roles;        // บทบาทของผู้ใช้ (เช่น 'Admin', 'Developer')
-
-            // อนุญาต: ถ้าเป็นเจ้าของเกม หรือเป็น Admin
+            // ตรวจสอบความเป็นเจ้าของ (Developer หรือ Admin)
+            const loggedInUserId = req.user.User_id;
+            const gameOwnerId = game.User_id;
+            const userRole = req.user.Roles;
             if (gameOwnerId !== loggedInUserId && userRole !== 'Admin') {
                 req.flash('error', 'Permission denied. You are not authorized to edit this game.');
                 return res.status(403).redirect(`/game/view/${gameId}`);
             }
 
-            // 💡 3. หากผ่านการตรวจสอบ: ดึงข้อมูลที่จำเป็นต่อการแสดงผล
-
-            // --- ดึงรูปภาพเกม ---
+            // ดึงข้อมูลประกอบ
             game.images = await gameModels.findImagesByGameId(gameId);
-
-            // --- ดึง Tags ของเกม ---
             game.tags = await gameModels.findTagsByGameId(gameId);
 
-            // 4. ส่งไป render หน้าแก้ไขเกม พร้อมข้อมูล game และ user
-            // Note: ตัวแปร user ถูกส่งไปใน res.locals.user โดย authMiddleware อยู่แล้ว
-            //       แต่เราส่งซ้ำไปใน object นี้เพื่อให้มั่นใจว่า view ได้รับ
             res.render('edit_game', {
-                game: game,
+                game,
                 user: req.user,
                 flashMessages: {
                     error: req.flash('error'),
@@ -100,185 +152,12 @@ const gameController = {
         }
     },
 
-    getDownloadGame: async (req, res) => {
-        try {
-            const gameId = parseInt(req.params.id, 10);
-
-            // 1. ตรวจสอบและดึงข้อมูลเกม
-            const game = await gameModels.findGameById(gameId);
-            if (!game || !game.File_Game) {
-                return res.status(404).send("Game file not found.");
-            }
-
-            // 2. สร้าง Path ไปยังไฟล์เกม
-            const filePath = path.join(__dirname, "../public/game/file", game.File_Game);
-
-            // 3. ตรวจสอบว่าไฟล์มีอยู่จริง
-            try {
-                await fsPromises.access(filePath, fs.constants.F_OK);
-            } catch (e) {
-                console.error(`File not found at path: ${filePath}`);
-                return res.status(404).send("Game file not found on server.");
-            }
-
-            // 4. ส่งไฟล์กลับไปให้ผู้ใช้ดาวน์โหลด
-            res.download(filePath, game.Game_Title + '.zip', async (err) => {
-                if (err) {
-
-                    if (err.code === 'ECONNABORTED' || err.headersSent) {
-                        console.log(`Download for Game ID ${gameId} aborted by client.`);
-                        return; // ไม่ต้องทำอะไรต่อ (ไม่นับดาวน์โหลด)
-                    }
-                    // หาก err เป็น Header already sent: เป็นไปได้ว่าผู้ใช้ยกเลิกการโหลด (Client Abort)
-                    // เราจะไม่นับดาวน์โหลดในกรณีนี้ เพราะไฟล์ไม่ได้ถูกส่งไปจนจบ
-                    // แต่ถ้าเป็น Error อื่นๆ เช่น Internal Error เราควร log ไว้
-                    console.error("Error during file download (possibly client abort):", err.message);
-                } else {
-                    // 💡✅ 5. ย้ายการนับค่า Download มาไว้ใน Callback นี้
-                    //    Callback นี้จะถูกเรียกเมื่อการตอบสนองเสร็จสิ้น (ไฟล์ถูกส่งจนจบ)
-                    try {
-                        await gameModels.incrementGameDownloads(gameId);
-                        console.log(`Game ID ${gameId}: Download count successfully incremented.`);
-                    } catch (dbErr) {
-                        console.error(`Error incrementing download count for game ID ${gameId}:`, dbErr);
-                    }
-                }
-            });
-
-        } catch (error) {
-            console.error("Error downloading game:", error);
-            res.status(500).send("Internal Server Error during download process.");
-        }
-    },
 
     // ==================================================
-    // แสดงหน้า View Game พร้อม Reviews
-    // ==================================================
-    getViewGamePage: async (req, res) => {
-        try {
-            // --- ดึงข้อมูลผู้ใช้ที่ล็อกอินอยู่ ---
-            let user = req.user || null;
-
-            const gameId = parseInt(req.params.id, 10);
-
-            // หาเกม
-            const game = await gameModels.findGameById(gameId);
-            if (!game) {
-                return res.status(404).send("Game not found");
-            }
-
-            // 💡 เพิ่ม: อัปเดตค่า View เมื่อมีการเข้าชมหน้า
-            await gameModels.incrementGameViews(gameId);
-
-            // --- ดึงข้อมูลอื่นๆ ที่เกี่ยวข้องกับเกม ---
-            const images = await gameModels.findImagesByGameId(gameId);
-            game.images = images.map(img => img.Path);
-
-            const comments = await gameModels.findReviewsByGameId(gameId);
-            const commentsWithTimeAgo = comments.map(c => ({
-                ...c,
-                timeAgo: dayjs(c.Created_At).fromNow()
-            }));
-
-            // --- ดึงข้อมูลนักพัฒนา, Tags ---
-            game.developer = await userModels.findByUserID(game.User_id);
-            game.tags = await gameModels.findTagsByGameId(gameId);
-
-
-            // Render หน้า view_game พร้อมส่งข้อมูลทั้งหมด
-            res.render('view_game', {
-                game: game,
-                reviews: commentsWithTimeAgo,
-                user: user // ส่งข้อมูลผู้ใช้ไปด้วย
-            });
-
-        } catch (error) {
-            console.error("Error fetching game:", error);
-            res.status(500).send("Internal Server Error");
-        }
-    },
-
-    // ==================================================
-    // บันทึกเกมใหม่ (Create)
-    // ==================================================
-    postCreateGame: async (req, res) => {
-        try {
-            const { title_game, description, status_game, details } = req.body;
-
-            // --- 1) ตรวจสอบการล็อกอิน ---
-            const userId = req.user ? req.user.User_id : null;
-            if (!userId)
-                return res.status(401).json({ error: "กรุณาเข้าสู่ระบบก่อน" });
-
-            // --- 2) ตรวจสอบไฟล์เกม ---
-            if (!req.files || !req.files.file_game)
-                return res.status(400).json({ error: "ต้องเลือกไฟล์เกม (.zip)" });
-
-            const gameFile = req.files.file_game;
-            if (!gameFile.name.endsWith(".zip"))
-                return res.status(400).json({ error: "ไฟล์เกมต้องเป็น .zip" });
-
-            // --- 3) ตรวจสอบรูปภาพ (≥ 1 รูป) ---
-            if (!req.files.images)
-                return res.status(400).json({ error: "ต้องอัปโหลดรูปเกมอย่างน้อย 1 รูป" });
-
-            const images = Array.isArray(req.files.images) ? req.files.images : [req.files.images];
-            if (images.length < 1)
-                return res.status(400).json({ error: "ต้องอัปโหลดรูปเกมอย่างน้อย 1 รูป" });
-
-            // --- 4) อ่าน Tags ---
-            let tags = req.body.tags;
-            if (!tags) tags = [];
-            else if (!Array.isArray(tags)) tags = [tags];
-            // console.log("Tags:", tags);
-
-            // --- 5) บันทึกไฟล์เกม ---
-            const gameFileName = Date.now() + "_" + gameFile.name;
-            const gameFilePath = path.join(__dirname, "../public/game/file", gameFileName);
-            fs.writeFileSync(gameFilePath, gameFile.data);
-
-            // --- 6) สร้างเกมใน DB ---
-            const newGame = await gameModels.createGame({
-                user_id: userId,
-                title_game,
-                description,
-                status_game,
-                details,
-                File_Game: gameFileName
-            });
-
-            // --- 7) บันทึกรูปภาพ ---
-            for (let img of images) {
-                const imageName = Date.now() + "_" + img.name;
-                const imagePath = path.join(__dirname, "../public/game/img", imageName);
-                fs.writeFileSync(imagePath, img.data);
-
-                await gameModels.createImage({
-                    url: imageName,
-                    game_id: newGame.Game_id
-                });
-            }
-
-            // --- 8) บันทึก Tags ---
-            if (tags.length > 0) {
-                await gameModels.createTags(newGame.Game_id, tags);
-            }
-
-            // --- 9) ส่ง response ---
-            res.json({ message: "สร้างเกมสำเร็จ", game: newGame });
-
-        } catch (err) {
-            console.error("Error creating game:", err);
-            res.status(500).json({ error: "สร้างเกมไม่สำเร็จ กรุณาลองใหม่" });
-        }
-    },
-
-    // ==================================================
-    // อัปเดตข้อมูลเกม (Update)
+    // 🟦 4. อัปเดตข้อมูลเกม (POST)
     // ==================================================
     postUpdateGame: async (req, res) => {
         try {
-
             const gameId = parseInt(req.params.id, 10);
             if (isNaN(gameId)) return res.status(400).json({ error: "Invalid game ID" });
 
@@ -287,49 +166,48 @@ const gameController = {
 
             const { Game_Title, Description, Status_Game, Details } = req.body;
 
-            // ==========================
-            // STEP 1: จัดการรูปภาพ
-            // ==========================
+            // --------------------------
+            // จัดการรูปภาพ (เก่า / ใหม่)
+            // --------------------------
             let deleteImages = req.body['delete_images[]'] || [];
             if (!Array.isArray(deleteImages)) deleteImages = [deleteImages];
             deleteImages = deleteImages.map(id => parseInt(id, 10));
 
             const existingImages = await gameModels.findImagesByGameId(gameId);
-
-            // รูปเก่าหลังลบ
             const remainingOldImages = existingImages.filter(
                 img => !deleteImages.includes(img.Game_Image_id)
             );
 
-            // รูปใหม่
-            const newImages = req.files?.images ? (Array.isArray(req.files.images) ? req.files.images : [req.files.images]) : [];
+            const newImages = req.files?.images
+                ? (Array.isArray(req.files.images) ? req.files.images : [req.files.images])
+                : [];
 
-            // ตรวจสอบว่ามีรูปอย่างน้อย 1 รูป
+            // ต้องมีรูปอย่างน้อย 1 รูป
             if ((remainingOldImages.length + newImages.length) === 0) {
                 return res.status(400).json({ error: "ต้องมีรูปอย่างน้อย 1 รูป" });
             }
 
-            // ลบรูปเก่า
-            for (let imgId of deleteImages) {
+            // ลบรูปเก่าที่เลือก
+            for (const imgId of deleteImages) {
                 const img = await gameModels.findImageById(imgId);
                 if (img) {
                     const imgPath = path.join(__dirname, "../public", img.Path);
-                    try { await fsPromises.unlink(imgPath); } catch (err) { }
+                    try { await fsPromises.unlink(imgPath); } catch { }
                     await gameModels.deleteImage(imgId);
                 }
             }
 
             // เพิ่มรูปใหม่
-            for (let img of newImages) {
+            for (const img of newImages) {
                 const imageName = Date.now() + "_" + img.name;
                 const imagePath = path.join(__dirname, "../public/game/img", imageName);
                 await fsPromises.writeFile(imagePath, img.data);
                 await gameModels.createImage({ url: imageName, game_id: gameId });
             }
 
-            // ==========================
-            // ✅ STEP 3: อัปเดต Tags
-            // ==========================
+            // --------------------------
+            // อัปเดต Tags
+            // --------------------------
             let tags = req.body.tags;
             if (!tags) tags = [];
             else if (!Array.isArray(tags)) tags = [tags];
@@ -344,9 +222,9 @@ const gameController = {
             });
             await gameModels.updateTags(gameId, tagsData);
 
-            // ==========================
-            // ✅ STEP 5: อัปเดตไฟล์เกม (.zip)
-            // ==========================
+            // --------------------------
+            // อัปเดตไฟล์เกม (.zip)
+            // --------------------------
             const updateData = { Game_Title, Description, Status_Game, Details };
 
             if (req.files?.file_game) {
@@ -366,11 +244,10 @@ const gameController = {
                 }
             }
 
-            // ==========================
-            // ✅ STEP 6: อัปเดตข้อมูลเกมหลัก
-            // ==========================
+            // --------------------------
+            // อัปเดตข้อมูลเกมหลัก
+            // --------------------------
             await gameModels.updateGame(gameId, updateData);
-
             res.json({ message: "แก้ไขเกมสำเร็จ", game: { Game_id: gameId } });
 
         } catch (error) {
@@ -379,8 +256,94 @@ const gameController = {
         }
     },
 
+
     // ==================================================
-    // เพิ่มรีวิวใหม่
+    // 🟨 5. หน้า “ดูรายละเอียดเกม” + Reviews
+    // ==================================================
+    getViewGamePage: async (req, res) => {
+        try {
+            const user = req.user || null;
+            const gameId = parseInt(req.params.id, 10);
+
+            const game = await gameModels.findGameById(gameId);
+            if (!game) return res.status(404).send("Game not found");
+
+            // เพิ่ม view count
+            await gameModels.incrementGameViews(gameId);
+
+            // ดึงข้อมูลประกอบ
+            const images = await gameModels.findImagesByGameId(gameId);
+            game.images = images.map(img => img.Path);
+
+            const comments = await gameModels.findReviewsByGameId(gameId);
+            const commentsWithTimeAgo = comments.map(c => ({
+                ...c,
+                timeAgo: dayjs(c.Created_At).fromNow()
+            }));
+
+            game.developer = await userModels.findByUserID(game.User_id);
+            game.tags = await gameModels.findTagsByGameId(gameId);
+
+            res.render('view_game', {
+                game,
+                reviews: commentsWithTimeAgo,
+                user
+            });
+
+        } catch (error) {
+            console.error("Error fetching game:", error);
+            res.status(500).send("Internal Server Error");
+        }
+    },
+
+
+    // ==================================================
+    // 🟨 6. ดาวน์โหลดไฟล์เกม
+    // ==================================================
+    getDownloadGame: async (req, res) => {
+        try {
+            const gameId = parseInt(req.params.id, 10);
+            const game = await gameModels.findGameById(gameId);
+
+            if (!game || !game.File_Game)
+                return res.status(404).send("Game file not found.");
+
+            const filePath = path.join(__dirname, "../public/game/file", game.File_Game);
+
+            try {
+                await fsPromises.access(filePath, fs.constants.F_OK);
+            } catch {
+                console.error(`File not found at path: ${filePath}`);
+                return res.status(404).send("Game file not found on server.");
+            }
+
+            // โหลดไฟล์ + เพิ่มจำนวนดาวน์โหลด
+            res.download(filePath, game.Game_Title + '.zip', async (err) => {
+                if (err) {
+                    if (err.code === 'ECONNABORTED' || err.headersSent) {
+                        console.log(`Download aborted for Game ID ${gameId}.`);
+                        return;
+                    }
+                    console.error("Error during file download:", err.message);
+                } else {
+                    try {
+                        await gameModels.incrementGameDownloads(gameId);
+                        console.log(`Game ID ${gameId}: Download count incremented.`);
+                    } catch (dbErr) {
+                        console.error(`Error incrementing download count:`, dbErr);
+                    }
+                }
+            });
+
+        } catch (error) {
+            console.error("Error downloading game:", error);
+            res.status(500).send("Internal Server Error");
+        }
+    },
+
+
+    // ==================================================
+    // 🟧 7. เพิ่มรีวิวใหม่ (POST)
     // ==================================================
     postCreateReview: async (req, res) => {
         try {
@@ -398,14 +361,16 @@ const gameController = {
             });
 
             res.redirect(`/game/view/${gameId}`);
+
         } catch (error) {
             console.error("Error creating review:", error);
             res.status(500).send("Internal Server Error");
         }
     },
 
+
     // ==================================================
-    // ดึงรีวิวทั้งหมดของเกม (JSON)
+    // 🟧 8. ดึงรีวิวทั้งหมดของเกม (JSON)
     // ==================================================
     getGameReview: async (req, res) => {
         try {
@@ -418,9 +383,10 @@ const gameController = {
         }
     },
 
-    // ==========================
-    // ลบเกม (Soft Delete)
-    // ==========================
+
+    // ==================================================
+    // 🟥 9. ลบเกม (Soft Delete)
+    // ==================================================
     postDeleteGame: async (req, res) => {
         try {
             const gameId = parseInt(req.params.id, 10);
@@ -430,36 +396,33 @@ const gameController = {
             if (isNaN(gameId)) return res.status(400).send("Invalid Game ID");
             if (!userId) return res.status(401).send("Unauthorized");
 
-            // ✅ ดึงข้อมูลเกมจาก model แทนที่จะใช้ prisma โดยตรง
             const game = await gameModels.findGameById(gameId);
-            const gameImages = await gameModels.findImagesByGameId(gameId);
-
             if (!game) return res.status(404).send("Game not found");
 
-            // ตรวจสอบว่าเป็นเจ้าของเกมหรือไม่
+            // ตรวจสอบสิทธิ์การลบ
             if (game.User_id !== userId && req.user.Roles !== 'Admin') {
                 return res.status(403).send("Forbidden - You are not authorized to delete this game.");
             }
 
-            // ✅ Soft delete (ตั้งค่า Soft_Delete = 0)
             await gameModels.softDeleteGame(gameId);
+
+            // ตอบกลับตามต้นทาง
             if (from === 'admin') {
-                // ถ้ามาจากหน้า Admin ให้กลับไปที่หน้า Admin
                 res.redirect('/admin');
             } else if (from === 'edit') {
-                // ถ้ามาจากหน้า Edit (มักจะเป็นการเรียก AJAX) ให้ตอบกลับเป็น JSON
                 res.json({ success: true });
             } else {
-                // กรณีอื่น ๆ (เช่น จาก dashboard) ให้กลับไปที่ dashboard
                 res.redirect('/dashboard');
             }
+
         } catch (error) {
             console.error("Error deleting game:", error);
             res.status(500).send("Internal Server Error");
         }
-    },
+    }
 
 };
+
 
 // --------------------------
 // Export Game Controller

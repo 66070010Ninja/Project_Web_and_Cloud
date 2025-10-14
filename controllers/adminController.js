@@ -2,34 +2,62 @@
 // adminController.js
 // ==========================
 
-// 💡 ต้องมีการ import gameModels เพื่อดึงข้อมูลเกม
+// --------------------------
+// Import Dependencies
+// --------------------------
+// 💡 ดึง model ที่ใช้จัดการข้อมูล "เกม" จาก database
 const gameModels = require('../models/gameModels'); 
 
-const adminController = {
-    /**
-     * แสดงหน้า Admin Panel สำหรับจัดการเกมทั้งหมด
-     * (Route นี้ควรได้รับการป้องกันด้วย isRole(['Admin']))
-     */
-    getAdminPage: async(req, res) => {
-        try {
-            // 1. ดึงข้อมูลเกมทั้งหมด
-            const games = await gameModels.findAllGames(); 
 
-            // 2. ส่งข้อมูล games ไปยัง EJS template ('admin.ejs')
+// --------------------------
+// Controller Definition
+// --------------------------
+// 💡 รวมฟังก์ชันที่ใช้ควบคุมการทำงานฝั่ง Admin
+const adminController = {
+
+    /**
+     * =======================================
+     * [GET] /admin
+     * แสดงหน้า Admin Panel สำหรับจัดการเกมทั้งหมด
+     * =======================================
+     * ✅ ใช้ร่วมกับ middleware: isRole(['Admin'])
+     * เพื่อให้เฉพาะผู้ใช้ที่เป็น Admin เท่านั้นที่เข้าถึงได้
+     */
+    getAdminPage: async (req, res) => {
+        try {
+            // --------------------------
+            // 1️⃣ ดึงข้อมูลเกมทั้งหมดจากฐานข้อมูล
+            // --------------------------
+            const games = await gameModels.findAllGames();
+
+            // --------------------------
+            // 2️⃣ ส่งข้อมูลไปยังหน้า EJS (admin.ejs)
+            // --------------------------
+            // - games: รายการเกมทั้งหมด (Array)
+            // - EJS จะใช้ข้อมูลนี้ในการแสดงตารางรายชื่อเกม
             res.render('admin', { 
-                // EJS template ใช้ตัวแปร 'games' 
-                games: games || [] 
+                games: games || [] // หากไม่มีข้อมูล ให้ส่ง Array ว่าง
             });
 
         } catch (error) {
+            // --------------------------
+            // ❌ กรณีเกิดข้อผิดพลาด
+            // --------------------------
             console.error("Error fetching data for admin page:", error);
-            // 💡 ส่ง games เป็น Array ว่างพร้อมแสดงข้อความแจ้ง error ใน console
+
+            // แสดงหน้า admin.ejs พร้อมข้อความ error
             res.status(500).render('admin', { 
-                games: [],
-                error: 'Failed to load game data.'
+                games: [], // ป้องกัน EJS พังด้วยการส่ง Array ว่าง
+                error: 'Failed to load game data.' // แจ้งเตือนใน view
             });
-        };
+        }
     },
+
 };
 
+
+// --------------------------
+// Export Controller
+// --------------------------
+// 💡 ให้ไฟล์อื่น (เช่น routes/adminRouters.js) นำไปใช้งานได้
 module.exports = adminController;
