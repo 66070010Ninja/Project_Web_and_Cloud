@@ -15,6 +15,12 @@ const upload = require("../middlewares/uploadMiddleware");
 // ✅ Controller สำหรับจัดการเกม
 const gameController = require("../controllers/gameControllers");
 
+const GAME_MANAGER_ROLES = ["Member", "Admin"];
+const uploadConfig = [
+    { name: "file_game", maxCount: 1 }, // 1 ไฟล์เกม
+    { name: "images", maxCount: 10 },   // ได้สูงสุด 10 รูป
+];
+
 // --------------------------
 // ROUTE: ระบบเกม (Game Management)
 // --------------------------
@@ -72,10 +78,10 @@ router.post("/review/:id", isAuthenticated, gameController.postCreateReview);
  * เฉพาะ Member และ Admin
  */
 router.get(
-  "/create",
-  isAuthenticated,
-  isRole(["Member", "Admin"]),
-  gameController.getCreateGamePage
+    "/create",
+    isAuthenticated,
+    isRole(GAME_MANAGER_ROLES),
+    gameController.getCreateGamePage
 );
 
 /**
@@ -84,14 +90,11 @@ router.get(
  * อัปโหลดได้ทั้งไฟล์เกม (.zip) และภาพ (หลายไฟล์)
  */
 router.post(
-  "/create",
-  isAuthenticated,
-  isRole(["Member", "Admin"]),
-  upload.fields([
-    { name: "file_game", maxCount: 1 }, // 1 ไฟล์เกม
-    { name: "images", maxCount: 10 },   // ได้สูงสุด 10 รูป
-  ]),
-  gameController.postCreateGame
+    "/create",
+    isAuthenticated,
+    isRole(GAME_MANAGER_ROLES),
+    upload.fields(uploadConfig),
+    gameController.postCreateGame
 );
 
 /**
@@ -100,10 +103,10 @@ router.post(
  * ต้องเป็นเจ้าของเกมหรือ Admin (ตรวจใน Controller)
  */
 router.get(
-  "/edit/:id",
-  isAuthenticated,
-  isRole(["Member", "Admin"]),
-  gameController.getEditGamePage
+    "/edit/:id",
+    isAuthenticated,
+    isRole(GAME_MANAGER_ROLES),
+    gameController.getEditGamePage
 );
 
 /**
@@ -112,10 +115,11 @@ router.get(
  * (มี Check Ownership ภายใน Controller)
  */
 router.post(
-  "/edit/:id",
-  isAuthenticated,
-  isRole(["Member", "Admin"]),
-  gameController.postUpdateGame
+    "/edit/:id",
+    isAuthenticated,
+    isRole(GAME_MANAGER_ROLES),
+    upload.fields(uploadConfig),
+    gameController.postUpdateGame
 );
 
 /**
@@ -124,14 +128,11 @@ router.post(
  * (ตรวจสิทธิ์ว่าเป็นเจ้าของหรือ Admin)
  */
 router.post(
-  "/delete/:id",
-  isAuthenticated,
-  isRole(["Member", "Admin"]),
-  upload.fields([
-    { name: "file_game", maxCount: 1 }, // optional (ใช้เวลาแก้ไขไฟล์)
-    { name: "images", maxCount: 10 },   // optional (ใช้เวลาอัปเดตรูป)
-  ]),
-  gameController.postDeleteGame
+    "/delete/:id",
+    isAuthenticated,
+    isRole(GAME_MANAGER_ROLES),
+    upload.fields(uploadConfig), // 💡 เพิ่มส่วนนี้ตามที่ test คาดหวัง
+    gameController.postDeleteGame
 );
 
 // --------------------------

@@ -103,7 +103,7 @@ app.use(express.static('public'));
  * รวม route หลักของระบบทั้งหมด
  * เรียงตามลำดับความเฉพาะเจาะจง → ทั่วไป
  */
-const adminRoute = require('./routes/adminRouters');
+const adminRoute = require('./routes/adminRoutes');
 const userRoute  = require('./routes/userRoutes');
 const gameRoute  = require('./routes/gameRoutes');
 const pageRoute  = require('./routes/pageRoutes');
