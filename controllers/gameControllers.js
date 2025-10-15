@@ -226,15 +226,27 @@ const gameController = {
             // อัปเดตไฟล์เกม (.zip)
             // --------------------------
             const updateData = { Game_Title, Description, Status_Game, Details };
+            const uploadedGameFiles = req.files?.file_game;
 
-            if (req.files?.file_game) {
-                const file_game = req.files.file_game;
-                if (!file_game.name.endsWith(".zip"))
+            if (uploadedGameFiles && uploadedGameFiles.length > 0) {
+                const file_game = uploadedGameFiles[0];
+
+                if (!file_game.originalname.endsWith(".zip"))
                     return res.status(400).json({ error: "ไฟล์เกมต้องเป็น .zip เท่านั้น" });
 
-                const gameFileName = Date.now() + "_" + file_game.name;
+                // 1. สร้างชื่อไฟล์ใหม่
+                const gameFileName = Date.now() + "_" + file_game.originalname; // ใช้ originalname
                 const gameFilePath = path.join(__dirname, "../public/game/file", gameFileName);
-                await fsPromises.writeFile(gameFilePath, file_game.data);
+
+                // 2. ย้ายไฟล์ชั่วคราวไปที่ปลายทาง (แทนการ writeFile)
+                try {
+                    // 💡 ใช้ fsPromises.rename แทน fsPromises.writeFile
+                    await fsPromises.rename(file_game.path, gameFilePath);
+                } catch (err) {
+                    console.error("Error renaming/moving file:", err);
+                    return res.status(500).json({ error: "ไม่สามารถบันทึกไฟล์เกมได้" });
+                }
+
                 updateData.File_Game = gameFileName;
 
                 // ลบไฟล์เก่า
@@ -328,7 +340,6 @@ const gameController = {
                 } else {
                     try {
                         await gameModels.incrementGameDownloads(gameId);
-                        console.log(`Game ID ${gameId}: Download count incremented.`);
                     } catch (dbErr) {
                         console.error(`Error incrementing download count:`, dbErr);
                     }

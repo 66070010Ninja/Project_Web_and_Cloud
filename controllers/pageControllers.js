@@ -39,16 +39,33 @@ const pageController = {
     // ==========================
     getHomePage: async (req, res) => {
         try {
-            // ดึงเกมทั้งหมด
-            const games = await gameModels.getAllGames();
-            const gamesWithImages = await attachGameImages(games);
+            // 1. ดึงเกมทั้งหมด
+            const allGames = await gameModels.getAllGames();
+            const gamesWithImages = await attachGameImages(allGames);
 
-            // ดึงข้อมูลผู้ใช้ถ้ามี session
+            // 2. จัดเรียงเกมสำหรับส่วน "Most Download"
+            // 💡 สร้างสำเนาของอาร์เรย์ก่อนเรียง เพื่อไม่ให้กระทบกับลำดับเดิม (ถ้ามี)
+            const downloadGames = [...gamesWithImages].sort((a, b) => {
+                // เรียงลำดับจากมากไปน้อย (b - a) โดยใช้ฟิลด์ Download
+                // และตั้งค่าเริ่มต้นเป็น 0 หากฟิลด์เป็น undefined/null
+                const downloadB = b.Download || 0;
+                const downloadA = a.Download || 0;
+                return downloadB - downloadA;
+            });
+
+            // 3. เตรียมเกมสำหรับส่วน Featured (3 เกมแรก, ใช้ลำดับเดิม)
+            const featuredGames = gamesWithImages.slice(0, 3);
+
+            // 4. ดึงข้อมูลผู้ใช้ถ้ามี session
             const user = req.user || null;
 
-            // แสดงหน้า home.ejs
+            // 5. แสดงหน้า home.ejs โดยส่ง games 2 ชุดแยกกัน
             res.render('home', {
-                games: gamesWithImages,
+                // ส่ง games สำหรับ Featured (ใช้ในส่วน JS ด้านบน)
+                games: featuredGames,
+
+                // 💡 ส่ง downloadGames สำหรับส่วน Most Download (ใช้ใน Grid ด้านล่าง)
+                downloadGames: downloadGames,
                 user
             });
         } catch (error) {
