@@ -164,6 +164,10 @@ const gameController = {
             const existingGame = await gameModels.findGameById(gameId);
             if (!existingGame) return res.status(404).json({ error: "เกมไม่พบ" });
 
+            if (existingGame.User_id !== req.user.User_id) {
+                return res.status(403).json({ error: "คุณไม่มีสิทธิ์แก้ไขเกมนี้" });
+            }
+
             const { Game_Title, Description, Status_Game, Details } = req.body;
 
             // --------------------------
@@ -260,6 +264,7 @@ const gameController = {
             // อัปเดตข้อมูลเกมหลัก
             // --------------------------
             await gameModels.updateGame(gameId, updateData);
+            res.status(200).json({ message: "แก้ไขเกมสำเร็จ", game: { Game_id: gameId } });
             res.json({ message: "แก้ไขเกมสำเร็จ", game: { Game_id: gameId } });
 
         } catch (error) {
