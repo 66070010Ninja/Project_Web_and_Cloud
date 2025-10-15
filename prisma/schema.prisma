@@ -44,7 +44,7 @@ model games {
   Game_id      Int     @id @default(autoincrement()) // Primary Key
   User_id      Int                                   // FK -> account
   Game_Title   String  @db.VarChar(255)
-  Description  String? @db.VarChar(255)
+  Description  String? @db.Text
   File_Game    String  @db.VarChar(255)
   Status_Game  String? @db.VarChar(255)
   Log_Game     String? @db.VarChar(255)
@@ -53,7 +53,7 @@ model games {
   View         Int     @default(0)
   Download     Int     @default(0)
   Game_Engin   String? @db.VarChar(255)
-  Details      String? @db.VarChar(255)
+  Details      String? @db.Text
 
   // ความสัมพันธ์
   account account      @relation(fields: [User_id], references: [User_id])
@@ -89,7 +89,7 @@ model review {
   Review_id  Int      @id @default(autoincrement()) // Primary Key
   Game_id    Int                                    // FK -> games
   User_id    Int                                    // FK -> account
-  Comment    String?  @db.VarChar(255)
+  Comment    String?  @db.Text
   Created_At DateTime @default(now())
 
   // ความสัมพันธ์
