@@ -153,7 +153,7 @@ const gameModels = {
         // 3️⃣ การเรียงลำดับ (Sort)
         let orderBy = { Game_id: 'desc' }; // ค่าเริ่มต้น = ใหม่สุด
         if (sortOrder === 'most_downloaded') orderBy = { Download: 'desc' };
-        else if (sortOrder === 'most_liked') orderBy = { Game_id: 'desc' }; // Placeholder
+        else if (sortOrder === 'most_viewed') orderBy = { View: 'desc' }; // Placeholder
 
         // 4️⃣ ดึงข้อมูลเกม
         return await prisma.games.findMany({
