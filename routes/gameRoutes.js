@@ -1,139 +1,299 @@
 // ==========================
-// gameRoutes.js (จัดระเบียบ + อธิบาย)
+// routes/gameRoutes.js
 // ==========================
 
-// --------------------------
-// Import Dependencies
-// --------------------------
 const express = require("express");
 const router = express.Router();
 
-// ✅ Middleware สำหรับตรวจสอบสิทธิ์และอัปโหลดไฟล์
 const { isAuthenticated, isRole } = require("../middlewares/authMiddleware");
 const upload = require("../middlewares/uploadMiddleware");
-
-// ✅ Controller สำหรับจัดการเกม
 const gameController = require("../controllers/gameControllers");
 
+// --------------------------
+// Configuration
+// --------------------------
 const GAME_MANAGER_ROLES = ["Member", "Admin"];
 const uploadConfig = [
-    { name: "file_game", maxCount: 1 }, // 1 ไฟล์เกม
-    { name: "images", maxCount: 10 },   // ได้สูงสุด 10 รูป
+  { name: "file_game", maxCount: 1 }, // ไฟล์เกม
+  { name: "images", maxCount: 10 },   // รูปภาพ
 ];
 
-// --------------------------
-// ROUTE: ระบบเกม (Game Management)
-// --------------------------
-
 /**
- * ==========================
- * SECTION 1: PUBLIC ACCESS (เปิดให้เข้าถึงได้ทุกคน)
- * ==========================
+ * @swagger
+ * tags:
+ *   name: Games
+ *   description: API สำหรับจัดการข้อมูลเกม (CRUD + รีวิว)
  */
 
+// ===================================================================
+// SECTION 1: PUBLIC ACCESS
+// ===================================================================
+
 /**
- * [GET] /game/view/:id
- * 📄 แสดงรายละเอียดของเกม
- * ไม่ต้องล็อกอินก็เข้าดูได้
+ * @swagger
+ * /game/view/{id}:
+ *   get:
+ *     summary: แสดงรายละเอียดเกม
+ *     tags: [Games]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: ข้อมูลเกม
+ *       404:
+ *         description: ไม่พบเกม
  */
 router.get("/view/:id", gameController.getViewGamePage);
 
 /**
- * [GET] /game/review/:id
- * 💬 ดึงข้อมูลรีวิวของเกม (เช่น จาก AJAX)
- * ไม่ต้องล็อกอิน
+ * @swagger
+ * /game/review/{id}:
+ *   get:
+ *     summary: ดึงข้อมูลรีวิวของเกม
+ *     tags: [Games]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: รายการรีวิว
  */
 router.get("/review/:id", gameController.getGameReview);
 
 /**
- * [GET] /game/download/:id
- * ⬇️ ดาวน์โหลดไฟล์เกม (เช่น .zip)
- * เปิดให้สาธารณะ (หรือจะจำกัดภายหลังก็ได้)
+ * @swagger
+ * /game/download/{id}:
+ *   get:
+ *     summary: ดาวน์โหลดไฟล์เกม
+ *     tags: [Games]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: ดาวน์โหลดสำเร็จ
+ *       404:
+ *         description: ไม่พบไฟล์เกม
  */
 router.get("/download/:id", gameController.getDownloadGame);
 
 
-/**
- * ==========================
- * SECTION 2: AUTHENTICATED USERS (ต้องล็อกอิน)
- * ==========================
- */
+// ===================================================================
+// SECTION 2: AUTHENTICATED USERS
+// ===================================================================
 
 /**
- * [POST] /game/review/:id
- * 💬 เพิ่มรีวิวเกม (เฉพาะผู้ที่ล็อกอินแล้วเท่านั้น)
+ * @swagger
+ * /game/review/{id}:
+ *   post:
+ *     summary: เพิ่มรีวิวเกม
+ *     tags: [Games]
+ *     security:
+ *       - sessionAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - rating
+ *             properties:
+ *               rating:
+ *                 type: number
+ *                 example: 4.5
+ *               comment:
+ *                 type: string
+ *                 example: "เกมสนุกมาก"
+ *     responses:
+ *       201:
+ *         description: เพิ่มรีวิวสำเร็จ
+ *       400:
+ *         description: ข้อมูลไม่ถูกต้อง
  */
 router.post("/review/:id", isAuthenticated, gameController.postCreateReview);
 
 
-/**
- * ==========================
- * SECTION 3: ROLE-BASED ACCESS (เฉพาะ Member/Admin)
- * ==========================
- */
+// ===================================================================
+// SECTION 3: ROLE-BASED ACCESS (Member/Admin)
+// ===================================================================
 
 /**
- * [GET] /game/create
- * 🕹️ แสดงฟอร์มสร้างเกมใหม่
- * เฉพาะ Member และ Admin
+ * @swagger
+ * /game/create:
+ *   get:
+ *     summary: แสดงฟอร์มสร้างเกมใหม่
+ *     tags: [Games]
+ *     security:
+ *       - sessionAuth: []
+ *     responses:
+ *       200:
+ *         description: แสดงฟอร์มสำเร็จ
+ *       403:
+ *         description: ไม่มีสิทธิ์
  */
 router.get(
-    "/create",
-    isAuthenticated,
-    isRole(GAME_MANAGER_ROLES),
-    gameController.getCreateGamePage
+  "/create",
+  isAuthenticated,
+  isRole(GAME_MANAGER_ROLES),
+  gameController.getCreateGamePage
 );
 
 /**
- * [POST] /game/create
- * 💾 บันทึกข้อมูลเกมใหม่ลงฐานข้อมูล
- * อัปโหลดได้ทั้งไฟล์เกม (.zip) และภาพ (หลายไฟล์)
+ * @swagger
+ * /game/create:
+ *   post:
+ *     summary: สร้างเกมใหม่
+ *     tags: [Games]
+ *     security:
+ *       - sessionAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - title
+ *               - description
+ *               - file_game
+ *             properties:
+ *               title:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               file_game:
+ *                 type: string
+ *                 format: binary
+ *               images:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   format: binary
+ *     responses:
+ *       201:
+ *         description: สร้างเกมสำเร็จ
  */
 router.post(
-    "/create",
-    isAuthenticated,
-    isRole(GAME_MANAGER_ROLES),
-    upload.fields(uploadConfig),
-    gameController.postCreateGame
+  "/create",
+  isAuthenticated,
+  isRole(GAME_MANAGER_ROLES),
+  upload.fields(uploadConfig),
+  gameController.postCreateGame
 );
 
 /**
- * [GET] /game/edit/:id
- * ✏️ แสดงฟอร์มแก้ไขเกม
- * ต้องเป็นเจ้าของเกมหรือ Admin (ตรวจใน Controller)
+ * @swagger
+ * /game/edit/{id}:
+ *   get:
+ *     summary: แสดงฟอร์มแก้ไขเกม
+ *     tags: [Games]
+ *     security:
+ *       - sessionAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: แสดงฟอร์มแก้ไขเกมสำเร็จ
+ *       403:
+ *         description: ไม่มีสิทธิ์
  */
 router.get(
-    "/edit/:id",
-    isAuthenticated,
-    isRole(GAME_MANAGER_ROLES),
-    gameController.getEditGamePage
+  "/edit/:id",
+  isAuthenticated,
+  isRole(GAME_MANAGER_ROLES),
+  gameController.getEditGamePage
 );
 
 /**
- * [POST] /game/edit/:id
- * 💾 อัปเดตข้อมูลเกม
- * (มี Check Ownership ภายใน Controller)
+ * @swagger
+ * /game/edit/{id}:
+ *   post:
+ *     summary: อัปเดตเกม
+ *     tags: [Games]
+ *     security:
+ *       - sessionAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               images:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   format: binary
+ *     responses:
+ *       200:
+ *         description: อัปเดตเกมสำเร็จ
  */
 router.post(
-    "/edit/:id",
-    isAuthenticated,
-    isRole(GAME_MANAGER_ROLES),
-    upload.fields(uploadConfig),
-    gameController.postUpdateGame
+  "/edit/:id",
+  isAuthenticated,
+  isRole(GAME_MANAGER_ROLES),
+  upload.fields(uploadConfig),
+  gameController.postUpdateGame
 );
 
 /**
- * [POST] /game/delete/:id
- * 🗑️ ลบเกมออกจากระบบ
- * (ตรวจสิทธิ์ว่าเป็นเจ้าของหรือ Admin)
+ * @swagger
+ * /game/delete/{id}:
+ *   post:
+ *     summary: ลบเกม
+ *     tags: [Games]
+ *     security:
+ *       - sessionAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: ลบเกมสำเร็จ
+ *       403:
+ *         description: ไม่มีสิทธิ์ลบ
  */
 router.post(
-    "/delete/:id",
-    isAuthenticated,
-    isRole(GAME_MANAGER_ROLES),
-    upload.fields(uploadConfig), // 💡 เพิ่มส่วนนี้ตามที่ test คาดหวัง
-    gameController.postDeleteGame
+  "/delete/:id",
+  isAuthenticated,
+  isRole(GAME_MANAGER_ROLES),
+  gameController.postDeleteGame
 );
+
 
 // --------------------------
 // Export Router

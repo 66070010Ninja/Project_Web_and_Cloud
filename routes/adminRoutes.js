@@ -3,48 +3,70 @@
 // ==========================
 
 // --------------------------
-// Import Dependencies
+// 1️⃣ Import Dependencies
 // --------------------------
-// 💡 Express Router: ใช้จัดการเส้นทาง (route) เฉพาะของส่วน Admin
 const express = require("express");
 const router = express.Router();
 
-// 💡 Middleware ตรวจสอบสิทธิ์
+// ✅ Middleware ตรวจสอบสิทธิ์
 // - isAuthenticated: ตรวจสอบว่าผู้ใช้ล็อกอินแล้วหรือไม่
-// - isRole: ตรวจสอบบทบาท (role) เช่น 'Admin'
-const { isAuthenticated, isRole } = require('../middlewares/authMiddleware');
+// - isRole: ตรวจสอบสิทธิ์เฉพาะ role เช่น "Admin"
+const { isAuthenticated, isRole } = require("../middlewares/authMiddleware");
 
-// 💡 Controller ของฝั่ง Admin
-// - รวม logic สำหรับจัดการหน้า Admin Panel
-const adminController = require('../controllers/adminController');
-
+// ✅ Controller ฝั่ง Admin
+// - รวม logic สำหรับจัดการข้อมูลผู้ใช้, เกม, และระบบหลังบ้าน
+const adminController = require("../controllers/adminController");
 
 // --------------------------
-// Route Definitions
+// 2️⃣ Swagger Tag Definition
 // --------------------------
+/**
+ * @swagger
+ * tags:
+ *   name: Admin
+ *   description: API สำหรับส่วนจัดการของผู้ดูแลระบบ (Admin Panel)
+ */
+
+// ===================================================================
+// SECTION 1: ADMIN DASHBOARD
+// ===================================================================
 
 /**
  * =======================================
  * [GET] /admin
  * =======================================
- * แสดงหน้า Admin Panel
- * ✅ เฉพาะผู้ใช้ที่ล็อกอินและมีสิทธิ์เป็น "Admin" เท่านั้น
+ * แสดงหน้าแดชบอร์ดของแอดมิน
+ * - เฉพาะผู้ใช้ที่ล็อกอินและมี role = "Admin"
  * 
- * เส้นทางนี้ถูกกำหนดใน server.js ว่า:
- *   app.use('/admin', adminRoute);
- * 
- * ดังนั้น path จริงคือ: http://localhost:3000/admin
+ * ตัวอย่าง URL จริง:
+ *   http://localhost:3000/admin
+ */
+
+/**
+ * @swagger
+ * /admin:
+ *   get:
+ *     summary: แสดงหน้าแดชบอร์ดของผู้ดูแลระบบ
+ *     description: เข้าถึงเฉพาะผู้ใช้ที่มีสิทธิ์เป็น Admin เท่านั้น
+ *     tags: [Admin]
+ *     security:
+ *       - sessionAuth: []
+ *     responses:
+ *       200:
+ *         description: หน้าแดชบอร์ดของแอดมิน
+ *       401:
+ *         description: ต้องล็อกอินก่อนเข้าถึง
+ *       403:
+ *         description: ต้องมีสิทธิ์เป็น Admin
  */
 router.get(
-    '/',                   // 🔹 เส้นทางหลักของ /admin
-    isAuthenticated,        // ✅ ต้องล็อกอินก่อน
-    isRole(['Admin']),      // ✅ ต้องเป็น Admin เท่านั้น
-    adminController.getAdminPage  // 📦 เรียก Controller เพื่อเรนเดอร์หน้า Admin
+  "/",
+  isAuthenticated,              // ✅ ต้องล็อกอินก่อน
+  isRole(["Admin"]),            // ✅ ต้องเป็น Admin เท่านั้น
+  adminController.getAdminPage  // 📦 เรียก Controller เพื่อเรนเดอร์หน้า Admin
 );
 
-
-// --------------------------
+// ===================================================================
 // Export Router
-// --------------------------
-// 💡 ส่งออก router นี้ไปใช้ใน server.js
+// ===================================================================
 module.exports = router;
