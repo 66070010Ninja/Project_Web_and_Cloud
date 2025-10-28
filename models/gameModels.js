@@ -7,13 +7,20 @@
 // --------------------------
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+const path = require('path');
+
+// --------------------------
+// Environment Config
+// --------------------------
+const USE_S3 = process.env.USE_S3 === "true";
+const S3_BUCKET = process.env.AWS_S3_BUCKET_NAME;
+const S3_REGION = process.env.AWS_REGION || "ap-southeast-1";
 
 // --------------------------
 // Helper Functions
 // --------------------------
 /**
  * แปลงชื่อ Tag ที่มีช่องว่างให้ตรงกับฟิลด์ใน Prisma
- * เช่น 'Card Game' → 'Card_Game'
  */
 const mapTagToPrismaField = (tag) => {
     if (tag === 'Card Game') return 'Card_Game';
@@ -21,13 +28,25 @@ const mapTagToPrismaField = (tag) => {
     return tag.replace(/ /g, '_');
 };
 
+/**
+ * ✅ Helper: คืนค่า path หรือ URL ของไฟล์ (S3 / Local)
+ */
+const buildFilePath = (folder, filename) => {
+    if (USE_S3) {
+        // คืน URL เต็มของไฟล์บน S3
+        return `https://${S3_BUCKET}.s3.${S3_REGION}.amazonaws.com/${folder}/${filename}`;
+    }
+    // คืน path ภายใน public (ใช้ใน Local)
+    return `/${folder}/${filename}`;
+};
+
 // =========================================================
-// GAME MODELS (ข้อมูลหลักของเกม)
+// GAME MODELS
 // =========================================================
 const gameModels = {
 
     /**
-     * สร้างเกมใหม่ (ไม่รวมรูปและแท็ก)
+     * สร้างเกมใหม่
      */
     createGame: async (data) => prisma.games.create({
         data: {
@@ -36,73 +55,45 @@ const gameModels = {
             Description: data.description,
             Status_Game: data.status_game,
             Details: data.details,
-            File_Game: data.File_Game || "default.zip", // ถ้าไม่มีไฟล์ ใช้ default.zip
+            File_Game: data.File_Game || "default.zip",
         }
     }),
 
-    incrementGameViews: async (gameId) => {
-        return await prisma.games.update({
-            where: { Game_id: gameId },
-            data: { View: { increment: 1 } }, // ใช้คำสั่ง increment ของ Prisma
-        });
-    },
+    incrementGameViews: async (gameId) => prisma.games.update({
+        where: { Game_id: gameId },
+        data: { View: { increment: 1 } },
+    }),
 
-    incrementGameDownloads: async (gameId) => {
-        return await prisma.games.update({
-            where: { Game_id: gameId },
-            data: { Download: { increment: 1 } }, // 💡 เพิ่มค่า Download
-        });
-    },
+    incrementGameDownloads: async (gameId) => prisma.games.update({
+        where: { Game_id: gameId },
+        data: { Download: { increment: 1 } },
+    }),
 
-    /**
-     * อัปเดตข้อมูลเกม (แก้ไขรายละเอียด)
-     */
-    updateGame: async (id, data) => {
-        return await prisma.games.update({
-            where: { Game_id: id },
-            data: data
-        });
-    },
+    updateGame: async (id, data) => prisma.games.update({
+        where: { Game_id: id },
+        data: data
+    }),
 
-    /**
-     * Soft Delete (ลบเกมแบบไม่ถาวร)
-     */
-    softDeleteGame: async (gameId) => {
-        return await prisma.games.update({
-            where: { Game_id: gameId },
-            data: { Soft_Delete: 0 },
-        });
-    },
+    softDeleteGame: async (gameId) => prisma.games.update({
+        where: { Game_id: gameId },
+        data: { Soft_Delete: 0 },
+    }),
 
-    /**
-     * ค้นหาเกมด้วย ID (รวมข้อมูล tags)
-     */
     findGameById: async (id) => {
         const gameId = Number(id);
         if (isNaN(gameId)) return null;
-
-        return await prisma.games.findUnique({
+        return prisma.games.findUnique({
             where: { Game_id: gameId },
             include: { tags: true }
         });
     },
 
-    /**
-     * ดึงเกมทั้งหมดที่ไม่ถูกลบ
-     */
-    getAllGames: async () => {
-        return await prisma.games.findMany({
-            where: {
-                Soft_Delete: { not: 0 }
-            },
-            include: { tags: true },
-            orderBy: { Game_id: 'desc' } // เรียงจากใหม่สุด
-        });
-    },
+    getAllGames: async () => prisma.games.findMany({
+        where: { Soft_Delete: { not: 0 } },
+        include: { tags: true },
+        orderBy: { Game_id: 'desc' }
+    }),
 
-    /**
-     * ดึงเกมทั้งหมดของผู้ใช้แต่ละคน
-     */
     getGamesByUserId: async (userId) => {
         try {
             return await prisma.games.findMany({
@@ -117,11 +108,7 @@ const gameModels = {
         }
     },
 
-    /**
-     * ดึงเกมตามคำค้นหา + ตัวกรอง Tags + การเรียงลำดับ
-     */
     getFilteredGames: async (query, tagArray, sortOrder = 'newest') => {
-        // 1️⃣ สร้างเงื่อนไข Tags
         let tagConditions = {};
         if (tagArray && tagArray.length > 0) {
             const andConditions = tagArray.map(tag => ({
@@ -135,11 +122,9 @@ const gameModels = {
 
             const matchingGameIds = matchingTags.map(tag => tag.Game_id);
             if (matchingGameIds.length === 0) return [];
-
             tagConditions = { Game_id: { in: matchingGameIds } };
         }
 
-        // 2️⃣ สร้างเงื่อนไขค้นหา (query)
         let queryConditions = {};
         if (query) {
             queryConditions = {
@@ -150,13 +135,11 @@ const gameModels = {
             };
         }
 
-        // 3️⃣ การเรียงลำดับ (Sort)
-        let orderBy = { Game_id: 'desc' }; // ค่าเริ่มต้น = ใหม่สุด
+        let orderBy = { Game_id: 'desc' };
         if (sortOrder === 'most_downloaded') orderBy = { Download: 'desc' };
-        else if (sortOrder === 'most_viewed') orderBy = { View: 'desc' }; // Placeholder
+        else if (sortOrder === 'most_viewed') orderBy = { View: 'desc' };
 
-        // 4️⃣ ดึงข้อมูลเกม
-        return await prisma.games.findMany({
+        return prisma.games.findMany({
             where: {
                 ...tagConditions,
                 ...queryConditions,
@@ -168,35 +151,26 @@ const gameModels = {
     },
 
     // =========================================================
-    // TAG MODELS (ข้อมูลหมวดหมู่เกม)
+    // TAG MODELS
     // =========================================================
+    createTags: async (gameId, tags = []) => prisma.tags.create({
+        data: {
+            Game_id: gameId,
+            Action: tags.includes("Action") ? 1 : 0,
+            Adventure: tags.includes("Adventure") ? 1 : 0,
+            Card_Game: tags.includes("Card_Game") ? 1 : 0,
+            Educational: tags.includes("Educational") ? 1 : 0,
+            Fighting: tags.includes("Fighting") ? 1 : 0,
+            Interactive_Fiction: tags.includes("Interactive_Fiction") ? 1 : 0,
+            Puzzle: tags.includes("Puzzle") ? 1 : 0,
+            Racing: tags.includes("Racing") ? 1 : 0,
+            Other: tags.includes("Other") ? 1 : 0
+        }
+    }),
 
-    /**
-     * สร้าง Tags ของเกม
-     */
-    createTags: async (gameId, tags = []) => {
-        return await prisma.tags.create({
-            data: {
-                Game_id: gameId,
-                Action: tags.includes("Action") ? 1 : 0,
-                Adventure: tags.includes("Adventure") ? 1 : 0,
-                Card_Game: tags.includes("Card_Game") ? 1 : 0,
-                Educational: tags.includes("Educational") ? 1 : 0,
-                Fighting: tags.includes("Fighting") ? 1 : 0,
-                Interactive_Fiction: tags.includes("Interactive_Fiction") ? 1 : 0,
-                Puzzle: tags.includes("Puzzle") ? 1 : 0,
-                Racing: tags.includes("Racing") ? 1 : 0,
-                Other: tags.includes("Other") ? 1 : 0
-            }
-        });
-    },
-
-    /**
-     * อัปเดต Tags ของเกม (ถ้าไม่มีให้สร้างใหม่)
-     */
     updateTags: async (gameId, tagsData) => {
         try {
-            return await prisma.tags.upsert({
+            return prisma.tags.upsert({
                 where: { Game_id: gameId },
                 update: tagsData,
                 create: {
@@ -210,15 +184,11 @@ const gameModels = {
         }
     },
 
-    /**
-     * ดึง Tags ของเกม (ส่งเป็น array ของชื่อ tag ที่มีค่า 1)
-     */
     findTagsByGameId: async (gameId) => {
         const tagRecord = await prisma.tags.findUnique({
             where: { Game_id: gameId }
         });
         if (!tagRecord) return [];
-
         const tagNames = [];
         for (let key of ["Action", "Adventure", "Card_Game", "Educational", "Fighting", "Interactive_Fiction", "Puzzle", "Racing", "Other"]) {
             if (tagRecord[key] === 1) tagNames.push(key);
@@ -227,117 +197,86 @@ const gameModels = {
     },
 
     // =========================================================
-    // IMAGE MODELS (ข้อมูลรูปภาพของเกม)
+    // IMAGE MODELS
     // =========================================================
-
-    /**
-     * บันทึกรูปภาพใหม่ของเกม
-     */
     createImage: async (data) => {
-        return await prisma.game_image.create({
+        // ⚙️ ถ้าใช้ S3 ให้บันทึก URL เต็ม
+        const imagePath = USE_S3
+            ? buildFilePath("game/img", data.url)
+            : `/game/img/${data.url}`;
+
+        return prisma.game_image.create({
             data: {
-                Path: `/game/img/${data.url}`,
+                Path: imagePath,
                 Game_id: data.game_id
             }
         });
     },
 
-    /**
-     * ดึงรูปภาพทั้งหมดของเกม
-     */
-    findImagesByGameId: async (gameId) => {
-        return await prisma.game_image.findMany({
+    findImagesByGameId: async (gameId) =>
+        prisma.game_image.findMany({
             where: { Game_id: gameId },
             select: { Path: true, Game_Image_id: true }
-        });
-    },
+        }),
 
-    /**
-     * ดึงรูปภาพตาม ID
-     */
-    findImageById: async (imageId) => {
-        return await prisma.game_image.findUnique({
+    findImageById: async (imageId) =>
+        prisma.game_image.findUnique({
             where: { Game_Image_id: imageId }
-        });
-    },
+        }),
 
-    /**
-     * ลบรูปภาพด้วย ID
-     */
-    deleteImage: async (imageId) => {
-        return await prisma.game_image.delete({
+    deleteImage: async (imageId) =>
+        prisma.game_image.delete({
             where: { Game_Image_id: imageId }
-        });
-    },
+        }),
 
     // =========================================================
-    // REVIEW MODELS (รีวิวของผู้ใช้)
+    // REVIEW MODELS
     // =========================================================
-
-    /**
-     * เพิ่มรีวิวใหม่ให้กับเกม
-     */
-    createReview: async (data) => {
-        return await prisma.review.create({
+    createReview: async (data) =>
+        prisma.review.create({
             data: {
                 Game_id: data.game_id,
                 User_id: data.user_id,
                 Comment: data.comment
             }
-        });
-    },
+        }),
 
-    /**
-     * ดึงรีวิวทั้งหมดของเกม (เรียงจากใหม่สุด)
-     */
-    findReviewsByGameId: async (gameId) => {
-        return await prisma.review.findMany({
+    findReviewsByGameId: async (gameId) =>
+        prisma.review.findMany({
             where: { Game_id: gameId },
             include: { account: true },
             orderBy: { Created_At: 'desc' }
-        });
-    },
+        }),
 
     findAllGames: async () => {
         try {
             const gamesData = await prisma.games.findMany({
-                where: {
-                    Soft_Delete: 1 // ดึงเฉพาะเกมที่ยังไม่ถูกซ่อน (Soft Delete = 1)
-                },
+                where: { Soft_Delete: 1 },
                 select: {
                     Game_id: true,
                     Game_Title: true,
                     View: true,
                     Download: true,
-                    Game_Images: { // ดึงข้อมูลรูปภาพเกมที่เกี่ยวข้อง
-                        take: 1, // เอาแค่รูปแรก (สมมติว่าเป็นรูปปก)
-                        select: {
-                            Path: true // Path คือชื่อไฟล์รูปภาพ
-                        }
+                    Game_Images: {
+                        take: 1,
+                        select: { Path: true }
                     }
                 },
-                orderBy: {
-                    Game_id: 'desc' // เรียงลำดับเกมล่าสุด
-                }
+                orderBy: { Game_id: 'desc' }
             });
 
-            // จัดรูปแบบข้อมูลให้ตรงกับที่ EJS คาดหวัง
-            // EJS คาดหวัง: Game_ID, Game_Title, views, downloads, Game_Cover
             return gamesData.map(game => ({
                 Game_ID: game.Game_id,
                 Game_Title: game.Game_Title,
-                // แปลงชื่อ field ให้ตรงกับ EJS
                 views: game.View,
                 downloads: game.Download,
-                // กำหนดรูปปก: /game/img/ + ชื่อไฟล์
                 Game_Cover: game.Game_Images.length > 0
-                            ? game.Game_Images[0].Path // 💡 ต้องต่อ Path ที่ถูกต้อง
-                            : '/img/default_cover.jpg' // ใช้ default ถ้าไม่มีรูป
+                    ? game.Game_Images[0].Path
+                    : '/img/default_cover.jpg'
             }));
 
         } catch (error) {
             console.error("Prisma Error in findAllGames:", error);
-            // ส่ง error ขึ้นไปเพื่อให้ Controller จัดการต่อ
             throw new Error("Failed to fetch game list.");
         }
     },

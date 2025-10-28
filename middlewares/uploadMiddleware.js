@@ -1,120 +1,115 @@
 // ==========================
 // uploadMiddleware.js
-// (CommonJS Syntax + จัดระเบียบ + คอมเมนต์อธิบาย)
+// (CommonJS Syntax + รองรับ Local & S3 Upload)
 // ==========================
 
 // --------------------------
 // 1️⃣ Import Dependencies
 // --------------------------
 const multer = require("multer"); // สำหรับจัดการอัปโหลดไฟล์
-const path = require("path");     // ใช้จัดการเส้นทางไฟล์ (path.join, extname ฯลฯ)
-
+const path = require("path");     // จัดการเส้นทางไฟล์
+const AWS = require("aws-sdk");   // ใช้เชื่อมต่อกับ Amazon S3
+const multerS3 = require("multer-s3"); // สำหรับอัปโหลดไฟล์ขึ้น S3
 
 // --------------------------
-// 2️⃣ กำหนด Storage Engine สำหรับ Multer
+// 2️⃣ ตั้งค่า AWS SDK
 // --------------------------
-/**
- * ใช้ multer.diskStorage เพื่อกำหนด:
- *  - ตำแหน่งเก็บไฟล์ (destination)
- *  - ชื่อไฟล์ที่จัดเก็บ (filename)
- */
-const storage = multer.diskStorage({
+AWS.config.update({
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+    region: process.env.AWS_REGION || "ap-southeast-1", // 🇹🇭 ตัวอย่าง: Singapore region
+});
 
-    // ✅ ระบุโฟลเดอร์ปลายทางในการเก็บไฟล์
+// สร้าง instance ของ S3
+const s3 = new AWS.S3();
+
+// --------------------------
+// 3️⃣ เลือก Storage Engine (Local / S3)
+// --------------------------
+const useS3 = process.env.USE_S3 === "true"; // ✅ เปิด/ปิด S3 ผ่าน env
+
+// ✅ Local Disk Storage (เดิม)
+const localStorage = multer.diskStorage({
     destination: function (req, file, cb) {
-        // ตรวจสอบ fieldname ว่าเป็นประเภทไหน
         if (file.fieldname === "file_game") {
-            // 👉 กรณีเป็นไฟล์เกม (.zip)
             cb(null, path.join(__dirname, "../public/game/file"));
         } else if (file.fieldname === "images") {
-            // 👉 กรณีเป็นรูปภาพเกม (.jpg, .png)
             cb(null, path.join(__dirname, "../public/game/img"));
-        }
-        else if (file.fieldname === "Profile_Image") { 
-             // 👉 กรณีเป็นรูปโปรไฟล์ (Profile_Image) ให้เก็บใน public/user/img
-             cb(null, path.join(__dirname, "../public/user/img")); 
+        } else if (file.fieldname === "Profile_Image") {
+            cb(null, path.join(__dirname, "../public/user/img"));
         } else {
-            // 👉 กรณีไม่ระบุหรือ field อื่น ๆ
             cb(null, path.join(__dirname, "../public"));
         }
     },
-
-    // ✅ ตั้งชื่อไฟล์ใหม่ (เพื่อป้องกันชื่อซ้ำ)
     filename: function (req, file, cb) {
-        // สร้าง suffix เฉพาะ (timestamp + random number)
         const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-
-        // ดึงนามสกุลไฟล์เดิม
         const ext = path.extname(file.originalname);
-
-        // ตั้งชื่อไฟล์ใหม่ → ตัวอย่าง: "images-1691234567890-123456789.png"
         cb(null, `${file.fieldname}-${uniqueSuffix}${ext}`);
     },
 });
 
+// ✅ S3 Storage (ใหม่)
+const s3Storage = multerS3({
+    s3: s3,
+    bucket: process.env.AWS_S3_BUCKET_NAME, // ชื่อ bucket ของคุณ
+    contentType: multerS3.AUTO_CONTENT_TYPE,
+    acl: "public-read", // หรือ private ถ้าไม่อยากให้เข้าตรง URL ได้
+    metadata: function (req, file, cb) {
+        cb(null, { fieldName: file.fieldname });
+    },
+    key: function (req, file, cb) {
+        const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+        const ext = path.extname(file.originalname);
+
+        // ✅ แยก folder ตามประเภทไฟล์
+        let folder = "";
+        if (file.fieldname === "file_game") folder = "game/file/";
+        else if (file.fieldname === "images") folder = "game/img/";
+        else if (file.fieldname === "Profile_Image") folder = "user/img/";
+        else folder = "misc/";
+
+        cb(null, `${folder}${file.fieldname}-${uniqueSuffix}${ext}`);
+    },
+});
 
 // --------------------------
-// 3️⃣ สร้าง File Filter (กรองประเภทไฟล์ที่อนุญาต)
+// 4️⃣ File Filter (กรองประเภทไฟล์)
 // --------------------------
-/**
- * ใช้สำหรับกรองไฟล์ก่อนอัปโหลด:
- *  - `file_game` ต้องเป็น .zip เท่านั้น
- *  - `images` ต้องเป็น .jpg / .jpeg / .png เท่านั้น
- */
 const fileFilter = (req, file, cb) => {
-    // 🕹️ กรองไฟล์เกม
     if (file.fieldname === "file_game") {
         const isZip = path.extname(file.originalname).toLowerCase() === ".zip";
-        if (!isZip) {
-            return cb(new Error("File_Game must be a .zip file."), false);
-        }
-    }
-
-    // 🖼️ กรองรูปภาพ
-    else if (file.fieldname === "images") {
+        if (!isZip) return cb(new Error("File_Game must be a .zip file."), false);
+    } else if (file.fieldname === "images" || file.fieldname === "Profile_Image") {
         const filetypes = /jpeg|jpg|png/;
         const mimetypeOK = filetypes.test(file.mimetype);
         const extnameOK = filetypes.test(path.extname(file.originalname).toLowerCase());
-
-        if (!mimetypeOK || !extnameOK) {
-            return cb(new Error("Images must be JPEG or PNG."), false);
-        }
+        if (!mimetypeOK || !extnameOK) return cb(new Error("Images must be JPEG or PNG."), false);
     }
-
-    // ✅ ผ่านการตรวจสอบทั้งหมด
     cb(null, true);
 };
 
-
 // --------------------------
-// 4️⃣ สร้าง Multer Instance (กำหนดค่า Limits เพิ่มเติม)
+// 5️⃣ Multer Instance (รวมทุก config)
 // --------------------------
-/**
- * สร้างอินสแตนซ์ multer พร้อม:
- *  - storage: รูปแบบจัดเก็บ
- *  - fileFilter: ตัวกรองประเภทไฟล์
- *  - limits: กำหนดขนาดสูงสุดของไฟล์/ฟิลด์
- */
 const upload = multer({
-    storage: storage,
+    storage: useS3 ? s3Storage : localStorage, // ✅ auto switch
     fileFilter: fileFilter,
     limits: {
-        fileSize: 1024 * 1024 * 1024, // ✅ จำกัดขนาดสูงสุดไฟล์ละ 1GB
-        fieldSize: 1024 * 1024 * 1024 // ✅ จำกัดขนาดรวมของฟิลด์ที่ส่งมา (1GB)
-    }
+        fileSize: 1024 * 1024 * 1024, // 1GB
+        fieldSize: 1024 * 1024 * 1024, // 1GB
+    },
 });
 
-
 // --------------------------
-// 5️⃣ Export Module (CommonJS)
+// 6️⃣ Export
 // --------------------------
 /**
- * Export ตัวแปร upload เพื่อใช้ใน router:
+ * วิธีใช้:
  * 
- * ตัวอย่างการใช้งาน:
  * router.post('/create', upload.fields([
  *     { name: 'file_game', maxCount: 1 },
- *     { name: 'images', maxCount: 10 }
+ *     { name: 'images', maxCount: 10 },
+ *     { name: 'Profile_Image', maxCount: 1 }
  * ]), controller.postCreateGame);
  */
 module.exports = upload;

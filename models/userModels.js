@@ -16,10 +16,6 @@ const userModels = {
     // -----------------------------------------------------
     // ✅ สร้างบัญชีผู้ใช้ใหม่ (Register)
     // -----------------------------------------------------
-    /**
-     * ใช้สร้างบัญชีผู้ใช้ใหม่ในระบบ
-     * @param {Object} data - ข้อมูลผู้ใช้ { username, email, password }
-     */
     create: async (data) => {
         return await prisma.account.create({
             data: {
@@ -33,10 +29,6 @@ const userModels = {
     // -----------------------------------------------------
     // ✅ ดึงข้อมูลผู้ใช้จาก User ID
     // -----------------------------------------------------
-    /**
-     * ใช้ดึงข้อมูลผู้ใช้ตาม User ID
-     * @param {number} user_id - รหัสผู้ใช้
-     */
     getUser: async (user_id) => {
         return await prisma.account.findUnique({
             where: { User_id: user_id },
@@ -45,12 +37,8 @@ const userModels = {
     },
 
     // -----------------------------------------------------
-    // ✅ ค้นหาผู้ใช้ด้วย Username (สำหรับ login / ตรวจสอบชื่อซ้ำ)
+    // ✅ ค้นหาผู้ใช้ด้วย Username
     // -----------------------------------------------------
-    /**
-     * ค้นหาผู้ใช้ด้วย Username
-     * @param {string} username - ชื่อผู้ใช้
-     */
     findByUsername: async (username) => {
         return await prisma.account.findUnique({
             where: { User_Name: username }
@@ -58,12 +46,8 @@ const userModels = {
     },
 
     // -----------------------------------------------------
-    // ✅ ค้นหาผู้ใช้ด้วย User ID (เหมือน getUser แต่ใช้ชื่อสื่อความชัด)
+    // ✅ ค้นหาผู้ใช้ด้วย ID (รวมรูปโปรไฟล์)
     // -----------------------------------------------------
-    /**
-     * ค้นหาผู้ใช้ด้วย ID (รวมรูปโปรไฟล์)
-     * @param {number} user_id - รหัสผู้ใช้
-     */
     findByUserID: async (user_id) => {
         return await prisma.account.findUnique({
             where: { User_id: user_id },
@@ -72,13 +56,8 @@ const userModels = {
     },
 
     // -----------------------------------------------------
-    // ✅ อัปเดตข้อมูลผู้ใช้ (ชื่อ, อีเมล, รหัสผ่าน)
+    // ✅ อัปเดตข้อมูลผู้ใช้
     // -----------------------------------------------------
-    /**
-     * ใช้สำหรับอัปเดตข้อมูลบัญชีผู้ใช้
-     * @param {number} id - รหัสผู้ใช้
-     * @param {Object} data - ข้อมูลที่ต้องการอัปเดต
-     */
     updateUser: async (id, data) => {
         return await prisma.account.update({
             where: { User_id: id },
@@ -91,29 +70,39 @@ const userModels = {
     },
 
     // =========================================================
-    // PROFILE IMAGE MODELS (รูปโปรไฟล์ผู้ใช้)
+    // PROFILE IMAGE MODELS (รองรับ S3 URL)
     // =========================================================
 
     // -----------------------------------------------------
-    // ✅ เพิ่มรูปโปรไฟล์ใหม่ให้ผู้ใช้
+    // ✅ เพิ่มหรืออัปโหลดรูปโปรไฟล์ให้ผู้ใช้ (S3 URL)
     // -----------------------------------------------------
     /**
-     * เพิ่มหรืออัปโหลดรูปโปรไฟล์ให้ผู้ใช้
      * @param {number} userId - รหัสผู้ใช้
-     * @param {string} path - ที่อยู่ไฟล์รูปภาพ (Path)
+     * @param {string} imageUrl - URL ของรูปภาพใน S3
      */
-    addProfileImage: async (userId, path) => {
-        return await prisma.user_image.create({
-            data: {
-                Path: path,
-                User_id: userId
-            }
+    addProfileImage: async (userId, imageUrl) => {
+        // ตรวจสอบว่าผู้ใช้นี้มีรูปอยู่แล้วไหม
+        const existing = await prisma.user_image.findUnique({
+            where: { User_id: userId }
         });
+
+        if (existing) {
+            // 👉 ถ้ามีแล้ว → อัปเดตเป็น URL ใหม่
+            return await prisma.user_image.update({
+                where: { User_id: userId },
+                data: { Path: imageUrl }
+            });
+        } else {
+            // 👉 ถ้ายังไม่มี → เพิ่มรายการใหม่
+            return await prisma.user_image.create({
+                data: {
+                    Path: imageUrl,
+                    User_id: userId
+                }
+            });
+        }
     },
 
 };
 
-// --------------------------
-// Export User Models
-// --------------------------
 module.exports = userModels;
