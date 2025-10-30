@@ -220,16 +220,31 @@ const gameModels = {
 
         if (!image) return;
 
-        // ลบไฟล์จาก S3 ถ้ามี
-        if (USE_S3 && image.Path.includes(`${S3_BUCKET}.s3.${S3_REGION}.amazonaws.com`)) {
-            const key = getS3KeyFromUrl(image.Path);
-            if (key) await s3.send(new DeleteObjectCommand({ Bucket: S3_BUCKET, Key: key }));
-        }
+        try {
+            // ลบไฟล์จาก S3 ถ้ามี (ตรวจสอบว่า Path มีชื่อ bucket จริงๆ)
+            if (USE_S3 && image.Path && image.Path.includes(`${S3_BUCKET}.s3.${S3_REGION}.amazonaws.com`)) {
+                const key = getS3KeyFromUrl(image.Path);
+                if (key) {
+                    try {
+                        await s3.send(new DeleteObjectCommand({ Bucket: S3_BUCKET, Key: key }));
+                    } catch (s3Err) {
+                        // ไม่ควรหยุด flow ถ้า S3 ล้มเหลว — แต่ log ไว้ช่วยดีบัก
+                        console.error(`Failed to delete image from S3 (key=${key}):`, s3Err);
+                    }
+                }
+            }
 
-        // ลบจาก DB
-        prisma.game_image.delete({
-            where: { Game_Image_id: imageId }
-        });
+            // ลบจาก DB — ต้อง await ให้แน่ใจว่าลบเสร็จก่อนคืนค่า
+            await prisma.game_image.delete({
+                where: { Game_Image_id: imageId }
+            });
+
+            // คืนค่า success (optional)
+            return true;
+        } catch (err) {
+            console.error(`Error deleting image id=${imageId}:`, err);
+            throw err;
+        }
     },
 
     // =========================================================
