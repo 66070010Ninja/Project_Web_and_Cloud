@@ -123,157 +123,131 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script>
-        // Immediately-invoked function expression (IIFE) to avoid global scope pollution
-        (function() {
-            const gameData = <%- JSON.stringify(game) %>;
-            let newImageFiles = [];
-            let newGameFile = null;
-            let imagesToDelete = [];
+    (function() {
+        const gameData = <%- JSON.stringify(game) %>;
+        let newImageFiles = [];
+        let newGameFile = null;
+        let imagesToDelete = [];
 
-            // Initialize Select2 for tags
-            $('#tags').select2({
-                placeholder: "Select tags for your game",
-                allowClear: true
-            }).val(gameData.tags).trigger('change');
+        // Initialize Select2 for tags
+        $('#tags').select2({ placeholder: "Select tags for your game", allowClear: true })
+            .val(gameData.tags).trigger('change');
 
-            // Image Upload Logic
-            const imageUploadBox = document.getElementById('imageUploadBox');
-            const imageInput = document.getElementById('images');
-            const newImagesPreview = document.getElementById('newImagesPreview');
-            const existingImagesInputs = document.getElementById('existingImagesInputs');
-            const existingImagesPreview = document.getElementById('existingImagesPreview');
+        const imageUploadBox = document.getElementById('imageUploadBox');
+        const imageInput = document.getElementById('images');
+        const newImagesPreview = document.getElementById('newImagesPreview');
+        const existingImagesPreview = document.getElementById('existingImagesPreview');
 
-            function setupDragAndDrop(box, input, onFiles) {
-                box.addEventListener('click', () => input.click());
-                box.addEventListener('dragover', (e) => {
-                    e.preventDefault();
-                    box.classList.add('dragover');
-                });
-                box.addEventListener('dragleave', () => box.classList.remove('dragover'));
-                box.addEventListener('drop', (e) => {
-                    e.preventDefault();
-                    box.classList.remove('dragover');
-                    if (e.dataTransfer.files.length) {
-                        input.files = e.dataTransfer.files;
-                        const changeEvent = new Event('change', { bubbles: true });
-                        input.dispatchEvent(changeEvent);
-                    }
-                });
-                input.addEventListener('change', () => onFiles(input.files));
-            }
-
-            function renderExistingImages() {
-                existingImagesPreview.innerHTML = '';
-                gameData.images.forEach(img => {
-                    const wrapper = document.createElement('div');
-                    wrapper.classList.add('image-preview-wrapper');
-                    wrapper.innerHTML = `
-                        <img src="${img.Path}" alt="Game Image" class="image-preview">
-                        <button type="button" class="remove-img-btn" data-id="${img.Game_Image_id}">×</button>
-                    `;
-                    existingImagesPreview.appendChild(wrapper);
-                });
-            }
-
-            existingImagesPreview.addEventListener('click', function(e) {
-                if (e.target.classList.contains('remove-img-btn')) {
-                    const imageId = parseInt(e.target.dataset.id, 10);
-
-                    // ลบจาก imagesToDelete
-                    if (!imagesToDelete.includes(imageId)) {
-                        imagesToDelete.push(imageId);
-                    }
-
-                    // ลบ preview
-                    e.target.parentElement.remove();
-
-                    // ลบ hidden input ของ existingImages[]
-                    const hiddenInput = document.getElementById(`existing-img-${imageId}`);
-                    if (hiddenInput) hiddenInput.remove();
-
-                    // สร้าง hidden input สำหรับ delete_images[]
-                    const deleteInput = document.createElement('input');
-                    deleteInput.type = 'hidden';
-                    deleteInput.name = 'delete_images[]';
-                    deleteInput.value = imageId;
-                    document.getElementById('editGameForm').appendChild(deleteInput);
-                }
-            });
-
-            function renderNewImagesPreview() {
-                newImagesPreview.innerHTML = '';
-                newImageFiles.forEach((file, index) => {
-                    const wrapper = document.createElement('div');
-                    wrapper.className = 'image-preview-wrapper';
-                    wrapper.innerHTML = `
-                        <img src="${URL.createObjectURL(file)}" class="image-preview" alt="New Screenshot">
-                        <button type="button" class="remove-img-btn" data-index="${index}">×</button>
-                    `;
-                    newImagesPreview.appendChild(wrapper);
-                });
-            }
-            
-            newImagesPreview.addEventListener('click', function(e) {
-                if (e.target.classList.contains('remove-img-btn')) {
-                    const index = parseInt(e.target.dataset.index, 10);
-                    newImageFiles.splice(index, 1);
-                    renderNewImagesPreview();
-                }
-            });
-
-            setupDragAndDrop(imageUploadBox, imageInput, (files) => {
-                newImageFiles.push(...Array.from(files));
-                renderNewImagesPreview();
-            });
-
-            // File Upload Logic
-            const fileUploadBox = document.getElementById('fileUploadBox');
-            const fileInput = document.getElementById('file_game');
-            const fileNameDisplay = document.getElementById('fileName');
-            
-            setupDragAndDrop(fileUploadBox, fileInput, (files) => {
-                const file = files[0];
-                if (file && file.name.endsWith('.zip')) {
-                    newGameFile = file;
-                    fileNameDisplay.textContent = `Selected new file: ${file.name}`;
-                    fileNameDisplay.style.display = 'block';
-                } else {
-                    alert('Please select a .zip file.');
-                    newGameFile = null;
-                    fileNameDisplay.textContent = '';
-                    fileNameDisplay.style.display = 'none';
-                }
-            });
-
-            // Form Submission
-            document.getElementById('editGameForm').addEventListener('submit', function(e) {
+        // Drag & Drop helper
+        function setupDragAndDrop(box, input, onFiles) {
+            box.addEventListener('click', () => input.click());
+            box.addEventListener('dragover', e => { e.preventDefault(); box.classList.add('dragover'); });
+            box.addEventListener('dragleave', () => box.classList.remove('dragover'));
+            box.addEventListener('drop', e => {
                 e.preventDefault();
-
-                const formData = new FormData(this);
-                formData.delete('images'); 
-                formData.delete('file_game');
-
-                newImageFiles.forEach(file => formData.append('images', file));
-                if (newGameFile) formData.append('file_game', newGameFile);
-                imagesToDelete.forEach(id => formData.append('delete_images[]', id));
-
-                fetch(this.action, { method: "POST", body: formData })
-                    .then(res => res.json())
-                    .then(data => {
-                        if (data.error) {
-                            alert(`Error: ${data.error}`);
-                            return;
-                        }
-                        alert("Game updated successfully!");
-                        window.location.href = `/game/view/${gameData.Game_id}`;
-                    })
-                    .catch(err => {
-                        console.error('Submission error:', err);
-                        alert('An error occurred while saving. Please check the console.');
-                    });
+                box.classList.remove('dragover');
+                if (e.dataTransfer.files.length) {
+                    input.files = e.dataTransfer.files;
+                    input.dispatchEvent(new Event('change', { bubbles: true }));
+                }
             });
+            input.addEventListener('change', () => onFiles(input.files));
+        }
 
-            // Delete Game Button
+        // Render existing images
+        function renderExistingImages() {
+            existingImagesPreview.innerHTML = '';
+            gameData.images.forEach(img => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'image-preview-wrapper';
+                wrapper.innerHTML = `
+                    <img src="${img.Path}" class="image-preview">
+                    <button type="button" class="remove-img-btn" data-id="${img.Game_Image_id}">×</button>
+                `;
+                existingImagesPreview.appendChild(wrapper);
+            });
+        }
+
+        existingImagesPreview.addEventListener('click', e => {
+            if (e.target.classList.contains('remove-img-btn')) {
+                const imageId = parseInt(e.target.dataset.id, 10);
+                if (!imagesToDelete.includes(imageId)) imagesToDelete.push(imageId);
+                e.target.parentElement.remove();
+            }
+        });
+
+        // Render new images preview
+        function renderNewImagesPreview() {
+            newImagesPreview.innerHTML = '';
+            newImageFiles.forEach((file, index) => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'image-preview-wrapper';
+                wrapper.innerHTML = `
+                    <img src="${URL.createObjectURL(file)}" class="image-preview">
+                    <button type="button" class="remove-img-btn" data-index="${index}">×</button>
+                `;
+                newImagesPreview.appendChild(wrapper);
+            });
+        }
+
+        newImagesPreview.addEventListener('click', e => {
+            if (e.target.classList.contains('remove-img-btn')) {
+                const index = parseInt(e.target.dataset.index, 10);
+                newImageFiles.splice(index, 1);
+                renderNewImagesPreview();
+            }
+        });
+
+        setupDragAndDrop(imageUploadBox, imageInput, files => {
+            newImageFiles.push(...Array.from(files));
+            renderNewImagesPreview();
+        });
+
+        // Game file
+        const fileUploadBox = document.getElementById('fileUploadBox');
+        const fileInput = document.getElementById('file_game');
+        const fileNameDisplay = document.getElementById('fileName');
+
+        setupDragAndDrop(fileUploadBox, fileInput, files => {
+            const file = files[0];
+            if (file && file.name.endsWith('.zip')) {
+                newGameFile = file;
+                fileNameDisplay.textContent = `Selected new file: ${file.name}`;
+            } else {
+                alert('Please select a .zip file.');
+                newGameFile = null;
+                fileNameDisplay.textContent = '';
+            }
+        });
+
+        // Form submission
+        document.getElementById('editGameForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            formData.delete('images'); 
+            formData.delete('file_game');
+
+            // Append new images
+            newImageFiles.forEach(file => formData.append('images', file));
+            if (newGameFile) formData.append('file_game', newGameFile);
+            imagesToDelete.forEach(id => formData.append('delete_images[]', id));
+
+            // Append tags as array
+            const selectedTags = $('#tags').val() || [];
+            formData.delete('tags');
+            selectedTags.forEach(tag => formData.append('tags', tag));
+
+            fetch(this.action, { method: 'POST', body: formData })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.error) { alert(data.error); return; }
+                    alert("Game updated successfully!");
+                    window.location.href = `/game/view/${gameData.Game_id}`;
+                })
+                .catch(err => { console.error(err); alert('เกิดข้อผิดพลาด'); });
+        });
+
+        // Delete Game Button
             document.getElementById('deleteGameBtn').addEventListener('click', function() {
                 if (confirm('Are you sure you want to delete this game? This action cannot be undone.')) {
                     fetch(`/game/delete/${gameData.Game_id}?from=edit`, { method: 'POST' })
@@ -292,10 +266,10 @@
                         });
                 }
             });
-            
-            // Initial render on page load
-            renderExistingImages();
-        })();
+
+        renderExistingImages();
+    })();
     </script>
+
 </body>
 </html>

@@ -82,7 +82,7 @@ const userModels = {
      */
     addProfileImage: async (userId, imageUrl) => {
         // ตรวจสอบว่าผู้ใช้นี้มีรูปอยู่แล้วไหม
-        const existing = await prisma.user_image.findUnique({
+        const existing = await prisma.user_image.findFirst({
             where: { User_id: userId }
         });
 

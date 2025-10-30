@@ -16,14 +16,15 @@ const gameModels = require('../models/gameModels');
  * ถ้าไม่มี → ใช้ Game_Cover เป็น fallback
  */
 const attachGameImages = async (games) => {
+    const baseUrl = process.env.CLOUDFRONT_URL || `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com`;
     return Promise.all(
         games.map(async (game) => {
             const images = await gameModels.findImagesByGameId(game.Game_id);
             return {
                 ...game,
                 images: images.length > 0
-                    ? images.map(img => img.Path)
-                    : [game.Game_Cover]
+                    ? images.map(img => `${baseUrl}/${img.Path}`)
+                    : [`${baseUrl}/${game.Game_Cover}`]
             };
         })
     );

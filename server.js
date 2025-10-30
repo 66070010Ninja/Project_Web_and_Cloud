@@ -23,7 +23,7 @@ const prisma = new PrismaClient();
 // --------------------------
 const app = express();
 const port = process.env.PORT || 3000;
-const host = '0.0.0.0'; // ฟังทุก IP address (จำเป็นสำหรับ EC2)
+const host = process.env.HOST || '0.0.0.0'; // ฟังทุก IP address (จำเป็นสำหรับ EC2)
 
 // --------------------------
 // 3️⃣ View Engine Setup (EJS)

@@ -1,5 +1,5 @@
 // ==========================
-// gameController.js (รองรับ S3)
+// gameController.js (รองรับ S3 + ลบภาพ)
 // ==========================
 
 const dayjs = require('dayjs');
@@ -8,20 +8,21 @@ dayjs.extend(relativeTime);
 
 const gameModels = require('../models/gameModels');
 const userModels = require('../models/userModels');
+const path = require('path');
+const { S3Client, DeleteObjectCommand } = require('@aws-sdk/client-s3');
 
-// 🟦 เพิ่ม AWS SDK สำหรับลบไฟล์จาก S3 (กรณีอัปเดต/ลบ)
-const { S3Client, DeleteObjectCommand } = require("@aws-sdk/client-s3");
 const s3 = new S3Client({
-    region: process.env.AWS_REGION,
-    credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
-    }
+    region: process.env.AWS_REGION
 });
 const BUCKET_NAME = process.env.AWS_BUCKET_NAME;
 
+const getS3KeyFromUrl = (url) => {
+    const prefix = `https://${BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/`;
+    return url.startsWith(prefix) ? url.slice(prefix.length) : null;
+};
+
 // ===================================================
-// 🟩 1. สร้างเกมใหม่ (POST)
+// 1️⃣ สร้างเกมใหม่ (POST)
 // ===================================================
 exports.postCreateGame = async (req, res) => {
     try {
@@ -41,18 +42,19 @@ exports.postCreateGame = async (req, res) => {
         if (!tags) tags = [];
         else if (!Array.isArray(tags)) tags = [tags];
 
-        // ✅ บันทึกเกมลงฐานข้อมูล (ใช้ URL จาก S3)
+        // ✅ บันทึกเกม
         const newGame = await gameModels.createGame({
             user_id: userId,
             title_game,
             description,
             status_game,
             details,
-            File_Game: gameFile.location // ← URL จาก S3
+            File_Game: gameFile.location
         });
 
-        // ✅ บันทึกรูปภาพ (URL จาก S3)
+        // ✅ บันทึกรูปภาพ
         for (const img of images) {
+            if (!img.location) continue;
             await gameModels.createImage({
                 url: img.location,
                 game_id: newGame.Game_id
@@ -63,6 +65,7 @@ exports.postCreateGame = async (req, res) => {
         if (tags.length > 0) await gameModels.createTags(newGame.Game_id, tags);
 
         res.json({ message: "สร้างเกมสำเร็จ", game: newGame });
+
     } catch (err) {
         console.error("Error creating game:", err);
         res.status(500).json({ error: "สร้างเกมไม่สำเร็จ กรุณาลองใหม่" });
@@ -70,41 +73,55 @@ exports.postCreateGame = async (req, res) => {
 };
 
 // ===================================================
-// 🟦 2. อัปเดตเกม (รองรับการอัปโหลดไฟล์ใหม่ไป S3)
+// 2️⃣ อัปเดตเกม (POST)
 // ===================================================
 exports.postUpdateGame = async (req, res) => {
     try {
         const gameId = parseInt(req.params.id, 10);
         const existingGame = await gameModels.findGameById(gameId);
-
         if (!existingGame) return res.status(404).json({ error: "ไม่พบเกม" });
-        if (existingGame.User_id !== req.user.User_id)
+        if (existingGame.User_id !== req.user.User_id && req.user.Roles !== 'Admin')
             return res.status(403).json({ error: "คุณไม่มีสิทธิ์แก้ไขเกมนี้" });
 
         const { Game_Title, Description, Status_Game, Details } = req.body;
+
+        // 1️⃣ จัดการ tags
+        let newTags = req.body.tags || [];
+        if (!Array.isArray(newTags)) newTags = [newTags];
+
+        const tagData = {
+            Action: newTags.includes("Action") ? 1 : 0,
+            Adventure: newTags.includes("Adventure") ? 1 : 0,
+            Card_Game: newTags.includes("Card_Game") ? 1 : 0,
+            Educational: newTags.includes("Educational") ? 1 : 0,
+            Fighting: newTags.includes("Fighting") ? 1 : 0,
+            Interactive_Fiction: newTags.includes("Interactive_Fiction") ? 1 : 0,
+            Puzzle: newTags.includes("Puzzle") ? 1 : 0,
+            Racing: newTags.includes("Racing") ? 1 : 0,
+            Other: newTags.includes("Other") ? 1 : 0,
+        };
+
+        // 2️⃣ อัปเดตไฟล์เกมใหม่
         const uploadedGameFiles = req.files?.file_game;
-        const newImages = req.files?.images || [];
-
         const updateData = { Game_Title, Description, Status_Game, Details };
-
-        // ✅ ถ้ามีอัปโหลดไฟล์เกมใหม่
         if (uploadedGameFiles?.length > 0) {
             const file = uploadedGameFiles[0];
-
-            // ลบไฟล์เก่าใน S3 (ถ้ามี)
             if (existingGame.File_Game?.includes("s3.amazonaws.com")) {
-                const key = existingGame.File_Game.split("/").slice(-1)[0];
-                await s3.send(new DeleteObjectCommand({
-                    Bucket: BUCKET_NAME,
-                    Key: `game/file/${key}`
-                }));
+                const key = getS3KeyFromUrl(existingGame.File_Game);
+                if (key) await s3.send(new DeleteObjectCommand({ Bucket: BUCKET_NAME, Key: key }));
             }
-
-            // อัปเดตเป็นไฟล์ใหม่
             updateData.File_Game = file.location;
         }
 
-        // ✅ เพิ่มรูปใหม่ใน S3
+        // 3️⃣ ลบภาพเก่า
+        let imagesToDelete = req.body['delete_images[]'] || [];
+        if (!Array.isArray(imagesToDelete)) imagesToDelete = [imagesToDelete];
+        for (const imageId of imagesToDelete) {
+            await gameModels.deleteImage(parseInt(imageId, 10));
+        }
+
+        // 4️⃣ เพิ่มภาพใหม่
+        const newImages = req.files?.images || [];
         for (const img of newImages) {
             await gameModels.createImage({
                 url: img.location,
@@ -112,9 +129,15 @@ exports.postUpdateGame = async (req, res) => {
             });
         }
 
-        // ✅ อัปเดตข้อมูลเกมในฐานข้อมูล
+        // 5️⃣ อัปเดตแท็ก
+        await gameModels.updateTags(gameId, tagData);
+
+        // 6️⃣ อัปเดตข้อมูลเกม
         await gameModels.updateGame(gameId, updateData);
-        res.json({ message: "อัปเดตเกมสำเร็จ", game: { Game_id: gameId } });
+
+        // 7️⃣ ส่งข้อมูลภาพล่าสุดกลับไป front-end
+        const updatedImages = await gameModels.findImagesByGameId(gameId);
+        res.json({ message: "อัปเดตเกมสำเร็จ", game: { Game_id: gameId, images: updatedImages } });
 
     } catch (err) {
         console.error("Error updating game:", err);
@@ -123,7 +146,7 @@ exports.postUpdateGame = async (req, res) => {
 };
 
 // ===================================================
-// 🟨 3. ดาวน์โหลดเกมจาก S3 (Redirect URL)
+// 3️⃣ ดาวน์โหลดเกม (Redirect URL)
 // ===================================================
 exports.getDownloadGame = async (req, res) => {
     try {
@@ -131,13 +154,11 @@ exports.getDownloadGame = async (req, res) => {
         const game = await gameModels.findGameById(gameId);
         if (!game) return res.status(404).send("ไม่พบเกม");
 
-        // ถ้าเก็บไฟล์เป็น URL ของ S3 → redirect ไปให้ดาวน์โหลด
         if (game.File_Game.startsWith("http")) {
             await gameModels.incrementGameDownloads(gameId);
             return res.redirect(game.File_Game);
         }
 
-        // fallback สำหรับ local (กรณีไฟล์เก่ายังอยู่)
         res.download(path.join(__dirname, "../public/game/file", game.File_Game));
 
     } catch (err) {
@@ -146,18 +167,18 @@ exports.getDownloadGame = async (req, res) => {
     }
 };
 
+// ===================================================
+// 4️⃣ แสดงเกม
+// ===================================================
 exports.getViewGamePage = async (req, res) => {
     try {
         const user = req.user || null;
         const gameId = parseInt(req.params.id, 10);
-
         const game = await gameModels.findGameById(gameId);
         if (!game) return res.status(404).send("Game not found");
 
-        // เพิ่ม view count
         await gameModels.incrementGameViews(gameId);
 
-        // ดึงข้อมูลประกอบ
         const images = await gameModels.findImagesByGameId(gameId);
         game.images = images.map(img => img.Path);
 
@@ -180,8 +201,11 @@ exports.getViewGamePage = async (req, res) => {
         console.error("Error fetching game:", error);
         res.status(500).send("Internal Server Error");
     }
-}
+};
 
+// ===================================================
+// 5️⃣ รีวิวเกม
+// ===================================================
 exports.getGameReview = async (req, res) => {
     try {
         const gameId = parseInt(req.params.id, 10);
@@ -191,120 +215,21 @@ exports.getGameReview = async (req, res) => {
         console.error("Error fetching reviews:", error);
         res.status(500).send("Internal Server Error");
     }
-}
+};
 
 exports.postCreateReview = async (req, res) => {
     try {
         const userId = req.user ? req.user.User_id : null;
-        if (!userId)
-            return res.status(401).send("Unauthorized: Please log in first.");
+        if (!userId) return res.status(401).send("Unauthorized");
 
         const gameId = parseInt(req.params.id, 10);
         const { comment } = req.body;
 
-        await gameModels.createReview({
-            game_id: gameId,
-            user_id: userId,
-            comment
-        });
-
+        await gameModels.createReview({ game_id: gameId, user_id: userId, comment });
         res.redirect(`/game/view/${gameId}`);
 
     } catch (error) {
         console.error("Error creating review:", error);
         res.status(500).send("Internal Server Error");
     }
-}
-
-exports.getCreateGamePage = async (req, res) => {
-    try {
-        const user = req.user || null;
-        res.render('create_game', {
-            user,
-            error: null
-        });
-    } catch (err) {
-        console.error("Error fetching user for create game page:", err);
-        res.status(500).send("An error occurred");
-    }
-}
-
-exports.getEditGamePage = async (req, res) => {
-    try {
-        const gameId = parseInt(req.params.id, 10);
-
-        // ตรวจสอบ login
-        if (!req.user) {
-            req.flash('error', 'Please log in to edit a game.');
-            return res.redirect('/user/login');
-        }
-
-        // ดึงข้อมูลเกม
-        const game = await gameModels.findGameById(gameId);
-        if (!game) {
-            req.flash('error', 'Game not found.');
-            return res.status(404).redirect('/browse');
-        }
-
-        // ตรวจสอบความเป็นเจ้าของ (Developer หรือ Admin)
-        const loggedInUserId = req.user.User_id;
-        const gameOwnerId = game.User_id;
-        const userRole = req.user.Roles;
-        if (gameOwnerId !== loggedInUserId && userRole !== 'Admin') {
-            req.flash('error', 'Permission denied. You are not authorized to edit this game.');
-            return res.status(403).redirect(`/game/view/${gameId}`);
-        }
-
-        // ดึงข้อมูลประกอบ
-        game.images = await gameModels.findImagesByGameId(gameId);
-        game.tags = await gameModels.findTagsByGameId(gameId);
-
-        res.render('edit_game', {
-            game,
-            user: req.user,
-            flashMessages: {
-                error: req.flash('error'),
-                success: req.flash('success')
-            }
-        });
-
-    } catch (error) {
-        console.error("Error fetching game for edit page:", error);
-        req.flash('error', 'An internal error occurred.');
-        res.status(500).redirect('/browse');
-    }
-}
-
-exports.postDeleteGame = async (req, res) => {
-    try {
-        const gameId = parseInt(req.params.id, 10);
-        const userId = req.user ? req.user.User_id : null;
-        const from = req.query.from || 'dashboard';
-
-        if (isNaN(gameId)) return res.status(400).send("Invalid Game ID");
-        if (!userId) return res.status(401).send("Unauthorized");
-
-        const game = await gameModels.findGameById(gameId);
-        if (!game) return res.status(404).send("Game not found");
-
-        // ตรวจสอบสิทธิ์การลบ
-        if (game.User_id !== userId && req.user.Roles !== 'Admin') {
-            return res.status(403).send("Forbidden - You are not authorized to delete this game.");
-        }
-
-        await gameModels.softDeleteGame(gameId);
-
-        // ตอบกลับตามต้นทาง
-        if (from === 'admin') {
-            res.redirect('/admin');
-        } else if (from === 'edit') {
-            res.json({ success: true });
-        } else {
-            res.redirect('/dashboard');
-        }
-
-    } catch (error) {
-        console.error("Error deleting game:", error);
-        res.status(500).send("Internal Server Error");
-    }
-}
+};
