@@ -157,10 +157,10 @@ const gameController = {
                 updateData.File_Game = newGameFile.location;
             }
 
-            console.log("req.body['delete_images[]']:", req.body['delete_images[]']);
+            console.log("req.body['delete_images']:", req.body['delete_images']);
 
             // ✅ ลบรูปเก่า
-            let imagesToDelete = req.body["delete_images[]"] || [];
+            let imagesToDelete = req.body.delete_images || [];
             if (!Array.isArray(imagesToDelete)) imagesToDelete = [imagesToDelete];
 
             for (const imgId of imagesToDelete) {
