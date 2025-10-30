@@ -23,8 +23,8 @@ const attachGameImages = async (games) => {
             return {
                 ...game,
                 images: images.length > 0
-                    ? images.map(img => `${baseUrl}/${img.Path}`)
-                    : [`${baseUrl}/${game.Game_Cover}`]
+                    ? images.map(img => img.Path.startsWith('http') ? img.Path : `${baseUrl}/${img.Path}`)
+                    : [game.Game_Cover.startsWith('http') ? game.Game_Cover : `${baseUrl}/${game.Game_Cover}`]
             };
         })
     );
