@@ -127,28 +127,35 @@ const userController = {
                 return res.redirect(`/user/edit`);
             }
 
+            // อัปเดตชื่อผู้ใช้
             await userModels.updateUser(userId, { User_Name });
 
-            // ✅ ถ้ามีการอัปโหลดรูปใหม่ (ผ่าน multer-s3)
+            // --------------------------
+            // ถ้ามีการอัปโหลดรูปใหม่
+            // --------------------------
             if (req.file) {
                 const file = req.file;
 
-                // ลบรูปเก่าจาก S3 ถ้าไม่ใช่ default
+                // ดึง user ปัจจุบันและ profile image
                 const oldUser = await userModels.findByUserID(userId);
-                const oldUrl = oldUser.Profile_Image_Path;
-                if (oldUrl && !oldUrl.endsWith("user_default.jpg")) {
-                    const key = oldUrl.split('/').slice(-2).join('/'); // เช่น "user/img/xxx.jpg"
+                const oldUrl = oldUser.Profile_Image?.Path; // ใช้ optional chaining
+
+                // ถ้าเป็น S3 และไม่ใช่ default image → ลบรูปเก่า
+                if (oldUrl && !oldUrl.endsWith("user_default.jpg") && oldUrl.startsWith('https://')) {
+                    // ดึง key ของ S3
+                    const key = oldUrl.split('/').slice(-2).join('/');
                     try {
                         await s3.send(new DeleteObjectCommand({
                             Bucket: BUCKET_NAME,
                             Key: key
                         }));
+                        console.log(`Deleted old S3 image: ${key}`);
                     } catch (err) {
-                        console.warn("Failed to delete old S3 image:", err.message);
+                        console.warn(`Failed to delete old S3 image ${key}:`, err.message);
                     }
                 }
 
-                // บันทึก URL ของรูปใหม่ลงใน DB
+                // บันทึก URL ของรูปใหม่ลง DB
                 await userModels.addProfileImage(userId, file.location);
 
                 req.flash('success', 'Profile and image updated successfully!');
@@ -156,6 +163,7 @@ const userController = {
                 req.flash('success', 'Profile name updated successfully!');
             }
 
+            // รีเฟรช session
             const updatedUser = await userModels.findByUserID(userId);
             req.session.user = updatedUser;
 
