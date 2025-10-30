@@ -87,9 +87,9 @@ const userModels = {
         });
 
         if (existing) {
-            // 👉 ถ้ามีแล้ว → อัปเดตเป็น URL ใหม่
+            // 👉 ใช้ primary key (User_Image_id) สำหรับ update
             return await prisma.user_image.update({
-                where: { User_id: userId },
+                where: { User_Image_id: existing.User_Image_id },
                 data: { Path: imageUrl }
             });
         } else {
