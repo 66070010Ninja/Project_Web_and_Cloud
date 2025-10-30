@@ -117,6 +117,21 @@ exports.postUpdateGame = async (req, res) => {
         let imagesToDelete = req.body['delete_images[]'] || [];
         if (!Array.isArray(imagesToDelete)) imagesToDelete = [imagesToDelete];
         for (const imageId of imagesToDelete) {
+            const img = await gameModels.findImageById(parseInt(imageId, 10));
+            if (img && img.url.includes("amazonaws.com")) {
+                const key = getS3KeyFromUrl(img.url);
+                if (key) {
+                    try {
+                        await s3.send(new DeleteObjectCommand({
+                            Bucket: BUCKET_NAME,
+                            Key: key
+                        }));
+                        console.log(`✅ Deleted from S3: ${key}`);
+                    } catch (err) {
+                        console.error("❌ S3 delete failed:", err);
+                    }
+                }
+            }
             await gameModels.deleteImage(parseInt(imageId, 10));
         }
 
