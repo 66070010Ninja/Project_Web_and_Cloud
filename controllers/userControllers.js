@@ -86,8 +86,8 @@ const userController = {
             const hashedPassword = await bcrypt.hash(password, 10);
             const newUser = await userModels.create({ username, email, password: hashedPassword });
 
-            // Default profile image (ใช้ไฟล์ใน S3 หรือ URL ตายตัว)
-            const defaultImageUrl = `${process.env.S3_BASE_URL}/user/img/user_default.jpg`;
+            // ใช้ default image จาก public folder
+            const defaultImageUrl = '/user/img/user_default.jpg';
             await userModels.addProfileImage(newUser.User_id, defaultImageUrl);
 
             res.redirect('/user/login');
