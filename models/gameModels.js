@@ -167,10 +167,16 @@ const gameModels = {
 
     updateTags: async (gameId, tagsData) => {
         try {
+            // แปลง Boolean → Int
+            const tagsInt = {};
+            for (const key in tagsData) {
+                tagsInt[key] = tagsData[key] ? 1 : 0;
+            }
+
             return prisma.tags.upsert({
                 where: { Game_id: gameId },
-                update: tagsData,
-                create: { Game_id: gameId, ...tagsData }
+                update: tagsInt,
+                create: { Game_id: gameId, ...tagsInt }
             });
         } catch (error) {
             console.error("Error updating tags:", error);
