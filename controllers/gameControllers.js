@@ -56,8 +56,8 @@ exports.postCreateGame = async (req, res) => {
         for (const img of images) {
             if (!img.location) continue;
             await gameModels.createImage({
-                url: img.location,
-                game_id: newGame.Game_id
+                Path: img.location,
+                Game_id: newGame.Game_id
             });
         }
 
@@ -118,8 +118,8 @@ exports.postUpdateGame = async (req, res) => {
         if (!Array.isArray(imagesToDelete)) imagesToDelete = [imagesToDelete];
         for (const imageId of imagesToDelete) {
             const img = await gameModels.findImageById(parseInt(imageId, 10));
-            if (img && img.url.includes("amazonaws.com")) {
-                const key = getS3KeyFromUrl(img.url);
+            if (img && img.Path.includes("amazonaws.com")) {
+                const key = getS3KeyFromUrl(img.Path);
                 if (key) {
                     try {
                         await s3.send(new DeleteObjectCommand({
@@ -139,8 +139,8 @@ exports.postUpdateGame = async (req, res) => {
         const newImages = req.files?.images || [];
         for (const img of newImages) {
             await gameModels.createImage({
-                url: img.location,
-                game_id: gameId
+                Path: img.location,
+                Game_id: gameId
             });
         }
 
@@ -152,7 +152,7 @@ exports.postUpdateGame = async (req, res) => {
 
         // 7️⃣ ส่งข้อมูลภาพล่าสุดกลับไป front-end
         const updatedImages = await gameModels.findImagesByGameId(gameId);
-        res.json({ message: "อัปเดตเกมสำเร็จ", game: { Game_id: gameId, images: updatedImages } });
+        res.json({ message: "อัปเดตเกมสำเร็จ", game: { Game_id: gameId, images: updatedImages.map(i => i.Path) } });
 
     } catch (err) {
         console.error("Error updating game:", err);
