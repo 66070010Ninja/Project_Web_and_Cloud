@@ -142,8 +142,11 @@ const userController = {
 
                 // ถ้าเป็น S3 และไม่ใช่ default image → ลบรูปเก่า
                 if (oldUrl && !oldUrl.endsWith("user_default.jpg") && oldUrl.startsWith('https://')) {
-                    // ดึง key ของ S3
-                    const key = oldUrl.split('/').slice(-2).join('/');
+                    // ดึง key ของ S3 จาก URL
+                    const url = new URL(oldUrl);
+                    // สมมติโครงสร้าง URL เป็น https://bucket-name.s3.region.amazonaws.com/folder/filename.jpg
+                    let key = url.pathname.substring(1); // เอา / ออก
+
                     try {
                         await s3.send(new DeleteObjectCommand({
                             Bucket: BUCKET_NAME,
