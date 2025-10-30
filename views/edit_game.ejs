@@ -173,6 +173,9 @@
                 const imageId = parseInt(e.target.dataset.id, 10);
                 if (!imagesToDelete.includes(imageId)) imagesToDelete.push(imageId);
                 e.target.parentElement.remove();
+
+                const hiddenInput = document.getElementById(`existing-img-${imageId}`);
+                if (hiddenInput) hiddenInput.remove();
             }
         });
 
