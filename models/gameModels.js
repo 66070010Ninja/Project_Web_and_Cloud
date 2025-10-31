@@ -159,7 +159,7 @@ const gameModels = {
     findTagsByGameId: async (gameId) => {
         const tagRecord = await prisma.tags.findUnique({ where: { Game_id: gameId } });
         if (!tagRecord) return [];
-        return ["Action","Adventure","Card_Game","Educational","Fighting","Interactive_Fiction","Puzzle","Racing","Other"]
+        return ["Action", "Adventure", "Card_Game", "Educational", "Fighting", "Interactive_Fiction", "Puzzle", "Racing", "Other"]
             .filter(k => tagRecord[k] === 1);
     },
 
@@ -222,6 +222,34 @@ const gameModels = {
         include: { account: true },
         orderBy: { Created_At: 'desc' }
     }),
+
+    findAllGames: async () => {
+        try {
+            const gamesData = await prisma.games.findMany({
+                where: { Soft_Delete: 1 },
+                select: {
+                    Game_id: true,
+                    Game_Title: true,
+                    View: true,
+                    Download: true,
+                    Game_Images: { take: 1, select: { Path: true } }
+                },
+                orderBy: { Game_id: 'desc' }
+            });
+
+            return gamesData.map(game => ({
+                Game_ID: game.Game_id,
+                Game_Title: game.Game_Title,
+                views: game.View,
+                downloads: game.Download,
+                Game_Cover: game.Game_Images.length > 0 ? game.Game_Images[0].Path : '/img/default_cover.jpg'
+            }));
+
+        } catch (error) {
+            console.error("Prisma Error in findAllGames:", error);
+            throw new Error("Failed to fetch game list.");
+        }
+    },
 };
 
 module.exports = gameModels;
