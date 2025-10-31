@@ -30,17 +30,6 @@ const attachGameImages = async (games) => {
                         ? `${baseUrl}/${path}`
                         : "/default-cover.png";
 
-            // ✅ Debug ภายใน map เท่านั้น
-            console.log("DEBUG IMAGE >>", {
-                title: game.Game_Title,
-                cover: game.Game_Cover,
-                imgsDB: imgs.map(i => i.Path),
-                finalImages: imgs.length
-                    ? imgs.map(img => formatImage(img.Path))
-                    : [formatImage(game.Game_Cover)],
-                baseUrl
-            });
-
             return {
                 ...game,
                 images: imgs.length
