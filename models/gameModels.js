@@ -2,18 +2,10 @@
 // gameModels.js
 // ==========================
 
-// --------------------------
-// Import Dependencies
-// --------------------------
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
-const path = require('path');
-const fs = require('fs');
 const { S3Client, DeleteObjectCommand } = require('@aws-sdk/client-s3');
 
-// --------------------------
-// Environment Config
-// --------------------------
 const USE_S3 = process.env.USE_S3 === "true";
 const S3_BUCKET = process.env.AWS_S3_BUCKET_NAME;
 const S3_REGION = process.env.AWS_REGION || "ap-southeast-1";
@@ -38,17 +30,16 @@ const buildFilePath = (folder, filename) => {
     return `/${folder}/${filename}`;
 };
 
-// ดึง key สำหรับลบไฟล์จาก S3
 const getS3KeyFromUrl = (url) => {
     const prefix = `https://${S3_BUCKET}.s3.${S3_REGION}.amazonaws.com/`;
-    if (url.startsWith(prefix)) return url.slice(prefix.length);
-    return null;
+    return url?.startsWith(prefix) ? url.slice(prefix.length) : null;
 };
 
 // =========================================================
 // GAME MODELS
 // =========================================================
 const gameModels = {
+
     createGame: async (data) => prisma.games.create({
         data: {
             User_id: data.user_id,
@@ -60,6 +51,11 @@ const gameModels = {
         }
     }),
 
+    updateGame: async (id, data) => prisma.games.update({
+        where: { Game_id: id },
+        data
+    }),
+
     incrementGameViews: async (gameId) => prisma.games.update({
         where: { Game_id: gameId },
         data: { View: { increment: 1 } },
@@ -68,11 +64,6 @@ const gameModels = {
     incrementGameDownloads: async (gameId) => prisma.games.update({
         where: { Game_id: gameId },
         data: { Download: { increment: 1 } },
-    }),
-
-    updateGame: async (id, data) => prisma.games.update({
-        where: { Game_id: id },
-        data: data
     }),
 
     softDeleteGame: async (gameId) => prisma.games.update({
@@ -95,23 +86,13 @@ const gameModels = {
         orderBy: { Game_id: 'desc' }
     }),
 
-    getGamesByUserId: async (userId) => {
-        try {
-            return await prisma.games.findMany({
-                where: {
-                    User_id: userId,
-                    Soft_Delete: { not: 0 }
-                }
-            });
-        } catch (error) {
-            console.error("Error fetching user's games:", error);
-            throw error;
-        }
-    },
+    getGamesByUserId: async (userId) => prisma.games.findMany({
+        where: { User_id: userId, Soft_Delete: { not: 0 } }
+    }),
 
     getFilteredGames: async (query, tagArray, sortOrder = 'newest') => {
         let tagConditions = {};
-        if (tagArray && tagArray.length > 0) {
+        if (tagArray?.length) {
             const andConditions = tagArray.map(tag => ({ [mapTagToPrismaField(tag)]: 1 }));
             const matchingTags = await prisma.tags.findMany({
                 where: { AND: andConditions },
@@ -166,43 +147,32 @@ const gameModels = {
     }),
 
     updateTags: async (gameId, tagsData) => {
-        try {
-            // แปลง Boolean → Int
-            const tagsInt = {};
-            for (const key in tagsData) {
-                tagsInt[key] = tagsData[key] ? 1 : 0;
-            }
-
-            return prisma.tags.upsert({
-                where: { Game_id: gameId },
-                update: tagsInt,
-                create: { Game_id: gameId, ...tagsInt }
-            });
-        } catch (error) {
-            console.error("Error updating tags:", error);
-            throw error;
-        }
+        const tagsInt = {};
+        for (const key in tagsData) tagsInt[key] = tagsData[key] ? 1 : 0;
+        return prisma.tags.upsert({
+            where: { Game_id: gameId },
+            update: tagsInt,
+            create: { Game_id: gameId, ...tagsInt }
+        });
     },
 
     findTagsByGameId: async (gameId) => {
         const tagRecord = await prisma.tags.findUnique({ where: { Game_id: gameId } });
         if (!tagRecord) return [];
-        return ["Action", "Adventure", "Card_Game", "Educational", "Fighting", "Interactive_Fiction", "Puzzle", "Racing", "Other"]
-            .filter(key => tagRecord[key] === 1);
+        return ["Action","Adventure","Card_Game","Educational","Fighting","Interactive_Fiction","Puzzle","Racing","Other"]
+            .filter(k => tagRecord[k] === 1);
     },
 
     // =========================================================
     // IMAGE MODELS
     // =========================================================
     createImage: async (data) => {
-        // เช็คว่ามีค่า url หรือไม่
-        const url = data.url || null;
-        const gameId = data.game_id;
+        const url = data.Path || data.path || null;
+        const gameId = data.Game_id || data.game_id;
 
         if (!gameId) throw new Error("Game ID is required for createImage");
 
         let imagePath;
-
         if (url) {
             if (USE_S3) {
                 imagePath = url.startsWith('http') ? url : buildFilePath("", url);
@@ -210,15 +180,11 @@ const gameModels = {
                 imagePath = `/${url}`;
             }
         } else {
-            // fallback ถ้า url ไม่มีค่า
             imagePath = '/default-cover.png';
         }
 
         return prisma.game_image.create({
-            data: {
-                Path: imagePath,
-                Game_id: gameId
-            }
+            data: { Path: imagePath, Game_id: gameId }
         });
     },
 
@@ -232,88 +198,30 @@ const gameModels = {
         prisma.game_image.findUnique({ where: { Game_Image_id: imageId } }),
 
     deleteImage: async (imageId) => {
-        const image = await prisma.game_image.findUnique({
-            where: { Game_Image_id: imageId }
-        });
-
+        const image = await prisma.game_image.findUnique({ where: { Game_Image_id: imageId } });
         if (!image) return;
 
-        try {
-            // ลบไฟล์จาก S3 ถ้ามี (ตรวจสอบว่า Path มีชื่อ bucket จริงๆ)
-            if (USE_S3 && image.Path && image.Path.includes(`${S3_BUCKET}.s3.${S3_REGION}.amazonaws.com`)) {
-                const key = getS3KeyFromUrl(image.Path);
-                if (key) {
-                    try {
-                        await s3.send(new DeleteObjectCommand({ Bucket: S3_BUCKET, Key: key }));
-                    } catch (s3Err) {
-                        // ไม่ควรหยุด flow ถ้า S3 ล้มเหลว — แต่ log ไว้ช่วยดีบัก
-                        console.error(`Failed to delete image from S3 (key=${key}):`, s3Err);
-                    }
-                }
-            }
-
-            // ลบจาก DB — ต้อง await ให้แน่ใจว่าลบเสร็จก่อนคืนค่า
-            await prisma.game_image.delete({
-                where: { Game_Image_id: imageId }
-            });
-
-            // คืนค่า success (optional)
-            return true;
-        } catch (err) {
-            console.error(`Error deleting image id=${imageId}:`, err);
-            throw err;
+        if (USE_S3 && image.Path?.includes(`${S3_BUCKET}.s3.${S3_REGION}.amazonaws.com`)) {
+            const key = getS3KeyFromUrl(image.Path);
+            if (key) await s3.send(new DeleteObjectCommand({ Bucket: S3_BUCKET, Key: key }));
         }
+
+        await prisma.game_image.delete({ where: { Game_Image_id: imageId } });
+        return true;
     },
 
     // =========================================================
     // REVIEW MODELS
     // =========================================================
-    createReview: async (data) =>
-        prisma.review.create({
-            data: {
-                Game_id: data.game_id,
-                User_id: data.user_id,
-                Comment: data.comment
-            }
-        }),
+    createReview: async (data) => prisma.review.create({
+        data: { Game_id: data.game_id, User_id: data.user_id, Comment: data.comment }
+    }),
 
-    findReviewsByGameId: async (gameId) =>
-        prisma.review.findMany({
-            where: { Game_id: gameId },
-            include: { account: true },
-            orderBy: { Created_At: 'desc' }
-        }),
-
-    findAllGames: async () => {
-        try {
-            const gamesData = await prisma.games.findMany({
-                where: { Soft_Delete: 1 },
-                select: {
-                    Game_id: true,
-                    Game_Title: true,
-                    View: true,
-                    Download: true,
-                    Game_Images: { take: 1, select: { Path: true } }
-                },
-                orderBy: { Game_id: 'desc' }
-            });
-
-            return gamesData.map(game => ({
-                Game_ID: game.Game_id,
-                Game_Title: game.Game_Title,
-                views: game.View,
-                downloads: game.Download,
-                Game_Cover: game.Game_Images.length > 0 ? game.Game_Images[0].Path : '/img/default_cover.jpg'
-            }));
-
-        } catch (error) {
-            console.error("Prisma Error in findAllGames:", error);
-            throw new Error("Failed to fetch game list.");
-        }
-    },
+    findReviewsByGameId: async (gameId) => prisma.review.findMany({
+        where: { Game_id: gameId },
+        include: { account: true },
+        orderBy: { Created_At: 'desc' }
+    }),
 };
 
-// --------------------------
-// Export Game Models
-// --------------------------
 module.exports = gameModels;
