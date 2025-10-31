@@ -54,17 +54,6 @@ const pageController = {
             const allGames = await gameModels.getAllGames();
             const gamesWithImages = await attachGameImages(allGames);
 
-            console.log("DEBUG >>", {
-                game: game.Game_Title,
-                cover: game.Game_Cover,
-                imagesFromDB: imgs.map(i => i.Path),
-                finalImages: imgs.length
-                    ? imgs.map(img => formatImage(img.Path))
-                    : [formatImage(game.Game_Cover)],
-                baseUrl
-            });
-
-
             // 2. จัดเรียงเกมสำหรับส่วน "Most Download"
             // 💡 สร้างสำเนาของอาร์เรย์ก่อนเรียง เพื่อไม่ให้กระทบกับลำดับเดิม (ถ้ามี)
             const downloadGames = [...gamesWithImages].sort((a, b) => {
