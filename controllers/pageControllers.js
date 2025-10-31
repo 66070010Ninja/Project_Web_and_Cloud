@@ -19,16 +19,6 @@ const attachGameImages = async (games) => {
     const baseUrl = process.env.CLOUDFRONT_URL
         || `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com`;
 
-    console.log("DEBUG IMAGE >>", {
-        title: game.Game_Title,
-        cover: game.Game_Cover,
-        imgsDB: imgs.map(i => i.Path),
-        finalImages: imgs.length
-            ? imgs.map(img => formatImage(img.Path))
-            : [formatImage(game.Game_Cover)],
-        baseUrl
-    });
-
     return Promise.all(
         games.map(async (game) => {
             const imgs = await gameModels.findImagesByGameId(game.Game_id);
@@ -40,6 +30,17 @@ const attachGameImages = async (games) => {
                         ? `${baseUrl}/${path}`
                         : "/default-cover.png";
 
+            // ✅ Debug ภายใน map เท่านั้น
+            console.log("DEBUG IMAGE >>", {
+                title: game.Game_Title,
+                cover: game.Game_Cover,
+                imgsDB: imgs.map(i => i.Path),
+                finalImages: imgs.length
+                    ? imgs.map(img => formatImage(img.Path))
+                    : [formatImage(game.Game_Cover)],
+                baseUrl
+            });
+
             return {
                 ...game,
                 images: imgs.length
@@ -49,6 +50,7 @@ const attachGameImages = async (games) => {
         })
     );
 };
+
 
 // --------------------------
 // Controller Functions
