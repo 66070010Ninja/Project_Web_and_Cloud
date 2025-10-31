@@ -195,17 +195,29 @@ const gameModels = {
     // IMAGE MODELS
     // =========================================================
     createImage: async (data) => {
+        // เช็คว่ามีค่า url หรือไม่
+        const url = data.url || null;
+        const gameId = data.game_id;
+
+        if (!gameId) throw new Error("Game ID is required for createImage");
+
         let imagePath;
-        if (USE_S3) {
-            imagePath = data.url.startsWith('http') ? data.url : buildFilePath("", data.url);
+
+        if (url) {
+            if (USE_S3) {
+                imagePath = url.startsWith('http') ? url : buildFilePath("", url);
+            } else {
+                imagePath = `/${url}`;
+            }
         } else {
-            imagePath = `/game/img/${data.url}`;
+            // fallback ถ้า url ไม่มีค่า
+            imagePath = '/default-cover.png';
         }
 
         return prisma.game_image.create({
             data: {
                 Path: imagePath,
-                Game_id: data.game_id
+                Game_id: gameId
             }
         });
     },
